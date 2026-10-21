@@ -28,10 +28,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Grid Background="Transparent" RenderTransformOrigin="0.5,0.5">
-                            <Grid.RenderTransform>
-                                <ScaleTransform x:Name="tileScale" />
-                            </Grid.RenderTransform>
+                        <Grid x:Name="tileRoot" Background="Transparent" RenderTransformOrigin="0.5,0.5">
                             <Border x:Name="focusRing" CornerRadius="22" Margin="14,2,14,26"
                                     BorderBrush="#CCFFFFFF" BorderThickness="0" />
                             <ContentPresenter />
@@ -41,8 +38,11 @@
                                 <Setter TargetName="focusRing" Property="BorderThickness" Value="2" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="tileScale" Property="ScaleX" Value="0.92" />
-                                <Setter TargetName="tileScale" Property="ScaleY" Value="0.92" />
+                                <Setter TargetName="tileRoot" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.92" ScaleY="0.92" />
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

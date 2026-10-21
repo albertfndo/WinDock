@@ -72,12 +72,41 @@ namespace WinDock.Native
                 return false;
             }
 
-            // Exclude zero-size windows (invisible background workers)
-            if (!isIconic && NativeMethods.GetWindowRect(hWnd, out NativeMethods.RECT rect))
+            // Check Window Rect & Off-screen positioning (used by Realtek and background tray daemons):
+            if (NativeMethods.GetWindowRect(hWnd, out NativeMethods.RECT rect))
             {
-                if (rect.Width <= 0 || rect.Height <= 0)
+                // 1. Zero size windows
+                if (!isIconic && (rect.Width <= 0 || rect.Height <= 0))
                 {
                     return false;
+                }
+
+                // 2. Off-screen parked coordinates (-32000 or < -5000), standard for background tray utilities like Realtek
+                if (rect.Left < -5000 || rect.Top < -5000 || rect.Right < -5000 || rect.Bottom < -5000)
+                {
+                    return false;
+                }
+            }
+
+            // 3. Monitor check: If not minimized, window MUST touch at least one physical monitor
+            if (!isIconic)
+            {
+                IntPtr hMon = NativeMethods.MonitorFromWindow(hWnd, NativeMethods.MONITOR_DEFAULTTONULL);
+                if (hMon == IntPtr.Zero)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // If minimized, check that normal placement was not off-screen
+                var wp = new NativeMethods.WINDOWPLACEMENT { length = Marshal.SizeOf<NativeMethods.WINDOWPLACEMENT>() };
+                if (NativeMethods.GetWindowPlacement(hWnd, ref wp))
+                {
+                    if (wp.rcNormalPosition.Left < -5000 || wp.rcNormalPosition.Top < -5000)
+                    {
+                        return false;
+                    }
                 }
             }
 
@@ -91,8 +120,27 @@ namespace WinDock.Native
                 return false;
             }
 
-            // Exclude known background system host processes
+            // Exclude known background driver utilities, tray processes, and system hosts
             var (procName, _) = GetProcessInfo(hWnd);
+
+            // Audio & Hardware Drivers background utilities (Realtek, Nahimic, Waves, Intel, etc.)
+            if (procName.StartsWith("Rtk", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("RAVCpl", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("RAVBg", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("Realtek", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("HDMSvr", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("Waves", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("Nahimic", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("igfx", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("nvtray", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("nvxdsync", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("SynTP", StringComparison.OrdinalIgnoreCase))
+            {
+                if (isIconic) return false;
+                if (rect.Left < -100 || rect.Top < -100) return false;
+            }
+
+            // Background system hosts
             if (string.Equals(procName, "SearchHost", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(procName, "StartMenuExperienceHost", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(procName, "TextInputHost", StringComparison.OrdinalIgnoreCase) ||
@@ -100,7 +148,13 @@ namespace WinDock.Native
                 string.Equals(procName, "LockApp", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(procName, "SystemSettingsBroker", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(procName, "PhoneExperienceHost", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(procName, "Widgets", StringComparison.OrdinalIgnoreCase))
+                string.Equals(procName, "Widgets", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "SecurityHealthSystray", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "SecurityHealthHost", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "conhost", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "dwm", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "taskhostw", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "sihost", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -108,9 +162,6 @@ namespace WinDock.Native
             return true;
         }
 
-        /// <summary>
-        /// Gets the window title.
-        /// </summary>
         public static string GetWindowTitle(IntPtr hWnd)
         {
             int length = NativeMethods.GetWindowTextLength(hWnd);

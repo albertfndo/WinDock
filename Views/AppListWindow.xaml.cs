@@ -59,28 +59,48 @@ namespace WinDock.Views
 
         public void ShowAndFocus()
         {
-            Left = 0;
-            Top = 0;
-            Width = SystemParameters.PrimaryScreenWidth;
-            Height = SystemParameters.PrimaryScreenHeight;
-            LayoutGrid();
-            LoadWallpaper();
+            try
+            {
+                Left = 0;
+                Top = 0;
+                Width = SystemParameters.PrimaryScreenWidth;
+                Height = SystemParameters.PrimaryScreenHeight;
+                LayoutGrid();
+                LoadWallpaper();
 
-            if (_allApps.Count == 0) LoadApplications();
-            SearchBox.Text = string.Empty; // also resets to page 1 via OnSearchTextChanged
-            _page = 0;
-            ShowPage();
+                if (_allApps.Count == 0) LoadApplications();
+                SearchBox.Text = string.Empty; // also resets to page 1 via OnSearchTextChanged
+                _page = 0;
+                ShowPage();
 
-            Show();
-            Activate();
-            SearchBox.Focus();
-            AnimateIn();
+                Show();
+                Activate();
+                SearchBox.Focus();
+                AnimateIn();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AppListWindow] ShowAndFocus error: {ex.Message}");
+                try
+                {
+                    Show();
+                    Activate();
+                }
+                catch { }
+            }
         }
 
         public void Toggle()
         {
-            if (IsVisible) Hide();
-            else ShowAndFocus();
+            try
+            {
+                if (IsVisible) Hide();
+                else ShowAndFocus();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[AppListWindow] Toggle error: {ex.Message}");
+            }
         }
 
         #region Layout, paging & search

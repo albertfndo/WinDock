@@ -321,9 +321,15 @@ namespace WinDock.Views
                 }
             }
 
-            // Launchpad tile matches app icon size, with the macOS squircle ratio
+            // Launchpad & Trash tiles match app icon size, with the macOS squircle ratio
             LaunchpadTile.Width = LaunchpadTile.Height = settings.IconSize;
             LaunchpadTile.CornerRadius = new CornerRadius(settings.IconSize * 0.225);
+
+            if (TrashTile != null)
+            {
+                TrashTile.Width = TrashTile.Height = settings.IconSize;
+                TrashTile.CornerRadius = new CornerRadius(settings.IconSize * 0.225);
+            }
 
             // Solid to Glass styling + Windows Dark/Light theme adaptation
             string tint = settings.DockTint ?? "#4B5563";

@@ -65,6 +65,23 @@
             </Setter>
         </Style>
 
+        <!-- Clean Dock Button (Zero padding/margins, transparent background, matches DockItem) -->
+        <Style x:Key="CleanDockButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- System Button Style -->
         <Style x:Key="TrayButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
@@ -212,38 +229,36 @@
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
                 <!-- 1. Launchpad tile (WinDock Start Menu). Sized to IconSize in ApplyAppearance. -->
-                <Button Style="{StaticResource TrayButtonStyle}"
+                <Button Style="{StaticResource CleanDockButtonStyle}"
                         Click="OnStartButtonClicked"
                         ToolTip="Launchpad (Win)"
-                        Padding="0"
-                        Margin="3,0,3,6">
-                    <Border x:Name="LaunchpadTile" Width="52" Height="52" CornerRadius="12">
-                        <Border.Background>
-                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Color="#5E5CE6" Offset="0" />
-                                <GradientStop Color="#2C2A8F" Offset="1" />
-                            </LinearGradientBrush>
-                        </Border.Background>
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.25" />
-                        </Border.Effect>
-                        <!-- 3x3 app grid glyph -->
-                        <UniformGrid Rows="3" Columns="3" Width="24" Height="24">
-                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
-                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
-                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
-                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
-                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
-                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
-                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
-                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
-                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
-                        </UniformGrid>
-                    </Border>
+                        Margin="3,0,3,0">
+                    <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,5">
+                        <Border x:Name="LaunchpadTile" Width="52" Height="52" CornerRadius="12">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#5E5CE6" Offset="0" />
+                                    <GradientStop Color="#2C2A8F" Offset="1" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.25" />
+                            </Border.Effect>
+                            <!-- 3x3 app grid glyph -->
+                            <UniformGrid Rows="3" Columns="3" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Ellipse Width="5" Height="5" Fill="#FFFFFF" Margin="1" />
+                                <Ellipse Width="5" Height="5" Fill="#FFFFFF" Margin="1" />
+                                <Ellipse Width="5" Height="5" Fill="#FFFFFF" Margin="1" />
+                                <Ellipse Width="5" Height="5" Fill="#FFFFFF" Margin="1" />
+                                <Ellipse Width="5" Height="5" Fill="#FFFFFF" Margin="1" />
+                                <Ellipse Width="5" Height="5" Fill="#FFFFFF" Margin="1" />
+                                <Ellipse Width="5" Height="5" Fill="#FFFFFF" Margin="1" />
+                                <Ellipse Width="5" Height="5" Fill="#FFFFFF" Margin="1" />
+                                <Ellipse Width="5" Height="5" Fill="#FFFFFF" Margin="1" />
+                            </UniformGrid>
+                        </Border>
+                    </Grid>
                 </Button>
-
-                <!-- Left Divider -->
-                <Rectangle Width="1" Height="24" Fill="{StaticResource DockDividerBrush}" Margin="4,0,6,0" VerticalAlignment="Center" />
 
                 <!-- 2. Pinned Application Icons -->
                 <ItemsControl x:Name="PinnedItemsControl"
@@ -275,14 +290,19 @@
                 <!-- Divider before Trash (macOS-style right section) -->
                 <Rectangle Width="1" Height="24" Fill="{StaticResource DockDividerBrush}" Margin="6,0,6,0" VerticalAlignment="Center" />
 
-                <!-- Recycle Bin -->
-                <Button Style="{StaticResource TrayButtonStyle}"
+                <!-- 4. Recycle Bin (Trash) -->
+                <Button Style="{StaticResource CleanDockButtonStyle}"
                         Click="OnRecycleBinClicked"
                         ToolTip="Recycle Bin"
-                        Margin="2,0,2,0">
-                    <Grid Width="26" Height="26">
-                        <Path Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
-                              Fill="{DynamicResource DockGlyph}" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        Margin="3,0,3,0">
+                    <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,5">
+                        <Border x:Name="TrashTile" Width="52" Height="52" CornerRadius="12" Background="#1AFFFFFF">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.25" />
+                            </Border.Effect>
+                            <Path Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                                  Fill="{DynamicResource DockGlyph}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
                     </Grid>
                 </Button>
 

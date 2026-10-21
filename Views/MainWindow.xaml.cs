@@ -222,6 +222,21 @@ namespace WinDock.Views
             }
         }
 
+        private void RegisterHotKeys(DockSettings settings)
+        {
+            if (_hotKeyHelper == null) return;
+            try
+            {
+                _hotKeyHelper.UnregisterAll();
+                var (taskbarMods, taskbarKey) = HotKeyHelper.ParseHotKey(settings.TaskbarHotKey);
+                var (spotlightMods, spotlightKey) = HotKeyHelper.ParseHotKey(settings.SpotlightHotKey);
+
+                _taskbarHotKeyId = _hotKeyHelper.Register(taskbarMods, taskbarKey);
+                _spotlightHotKeyId = _hotKeyHelper.Register(spotlightMods, spotlightKey);
+            }
+            catch { }
+        }
+
         public void ApplyAppearance(DockSettings settings)
         {
             DockBar.CornerRadius = new CornerRadius(settings.BorderRadius);
@@ -264,21 +279,6 @@ namespace WinDock.Views
                     AnimateDockSlide(show: true);
                 }
             }
-
-        private void RegisterHotKeys(DockSettings settings)
-        {
-            if (_hotKeyHelper == null) return;
-            try
-            {
-                _hotKeyHelper.UnregisterAll();
-                var (taskbarMods, taskbarKey) = HotKeyHelper.ParseHotKey(settings.TaskbarHotKey);
-                var (spotlightMods, spotlightKey) = HotKeyHelper.ParseHotKey(settings.SpotlightHotKey);
-
-                _taskbarHotKeyId = _hotKeyHelper.Register(taskbarMods, taskbarKey);
-                _spotlightHotKeyId = _hotKeyHelper.Register(spotlightMods, spotlightKey);
-            }
-            catch { }
-        }
 
             // Solid to Glass styling + Windows Dark/Light theme adaptation
             string tint = settings.DockTint ?? "#4B5563";

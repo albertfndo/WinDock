@@ -21,6 +21,7 @@ namespace WinDock.Models
         public bool EnableDropNotch { get; set; } = true;
         public double BorderRadius { get; set; } = 28.0; // 0px (sharp) to 40px (full capsule/pill)
         public double GlassOpacity { get; set; } = 0.65; // 1.0 = 100% Solid, 0.15 = Ultra Frosted Glass
+        public double BlurIntensity { get; set; } = 0.85; // 0.0 = Off / Flat, 1.0 = Deep Frosted Blur
         public string DockTint { get; set; } = "#4B5563"; // Elegant slate/gray background as seen in user screenshot
         public string Theme { get; set; } = "DarkGlass"; // DarkGlass, LightGlass, OLED, Cyberpunk
         public string AccentColor { get; set; } = "#3B82F6"; // Electric Blue

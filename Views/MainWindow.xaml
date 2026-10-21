@@ -12,8 +12,7 @@
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
-        Height="140"
-        SizeToContent="Width"
+        SizeToContent="WidthAndHeight"
         AllowDrop="True"
         DragEnter="OnDockDragEnter"
         DragOver="OnDockDragOver"
@@ -113,8 +112,15 @@
         <DataTemplate x:Key="DockItemTemplate">
             <Grid Width="{Binding ItemWidth}" Height="{Binding ItemHeight}" Margin="3,0,3,0"
                   Cursor="Hand"
+                  MouseEnter="OnDockItemMouseEnter"
+                  MouseLeave="OnDockItemMouseLeave"
+                  PreviewMouseLeftButtonDown="OnDockItemPreviewMouseDown"
+                  PreviewMouseMove="OnDockItemPreviewMouseMove"
                   MouseLeftButtonUp="OnItemClick"
                   MouseRightButtonUp="OnItemRightClick"
+                  AllowDrop="True"
+                  DragOver="OnDockItemDragOver"
+                  Drop="OnDockItemDrop"
                   Background="Transparent">
 
                 <!-- Fluid Upward Magnification -->
@@ -164,64 +170,26 @@
                         Background="{DynamicResource DockTextMuted}"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Bottom"
-                        Margin="0,0,0,1" />
+                        Margin="0,0,0,3" />
             </Grid>
         </DataTemplate>
     </Window.Resources>
 
-    <Grid x:Name="RootGrid" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,8">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <!-- macOS Floating Tooltip Bubble -->
-        <Border x:Name="MacTooltipBubble"
-                Grid.Row="0"
-                Opacity="0"
-                IsHitTestVisible="False"
-                Background="#E60F172A"
-                BorderBrush="#40FFFFFF"
-                BorderThickness="1"
-                CornerRadius="8"
-                Padding="10,4"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Bottom"
-                Margin="0,0,0,6">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="12" ShadowDepth="3" Direction="270" Color="#000000" Opacity="0.5" />
-            </Border.Effect>
-            <TextBlock x:Name="MacTooltipText"
-                       Text="App Title"
-                       Foreground="#F8FAFC"
-                       FontSize="11.5"
-                       FontWeight="SemiBold"
-                       FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
-        </Border>
-
+    <Grid x:Name="RootGrid" VerticalAlignment="Center" HorizontalAlignment="Center">
         <!-- Floating Dock Bar -->
         <Border x:Name="DockBar"
-                Grid.Row="1"
-                Height="78"
+                Height="80"
                 CornerRadius="28"
                 BorderThickness="1"
                 BorderBrush="#40FFFFFF"
-                Padding="10,4"
+                Padding="14,6,14,9"
                 HorizontalAlignment="Center"
                 ClipToBounds="False"
                 MouseEnter="OnDockMouseEnter"
                 MouseLeave="OnDockMouseLeave">
 
-            <Border.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                    <GradientStop Color="#E60F172A" Offset="0.0" />
-                    <GradientStop Color="#F0020617" Offset="1.0" />
-                </LinearGradientBrush>
-            </Border.Background>
-
             <Border.Effect>
-                <!-- Subtle: the glass is translucent, so a heavy shadow bleeds through it as a dark band -->
-                <DropShadowEffect BlurRadius="18" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.22" />
+                <DropShadowEffect BlurRadius="16" ShadowDepth="3" Direction="270" Color="#000000" Opacity="0.28" />
             </Border.Effect>
 
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -229,7 +197,8 @@
                 <!-- 1. Launchpad tile (WinDock Start Menu). Sized to IconSize in ApplyAppearance. -->
                 <Button Style="{StaticResource CleanDockButtonStyle}"
                         Click="OnStartButtonClicked"
-                        ToolTip="Launchpad (Win)"
+                        MouseEnter="OnLaunchpadMouseEnter"
+                        MouseLeave="OnSpecialTileMouseLeave"
                         Margin="3,0,3,0">
                     <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,5">
                         <Border x:Name="LaunchpadTile" Width="52" Height="52" CornerRadius="12">
@@ -282,17 +251,44 @@
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
 
-                <!-- Divider before Trash (macOS-style right section) -->
+                <!-- Divider before Downloads & Trash (macOS-style right section) -->
                 <Rectangle Width="1" Height="24" Fill="{StaticResource DockDividerBrush}" Margin="6,0,6,0" VerticalAlignment="Center" />
 
-                <!-- 4. Recycle Bin (Trash) -->
-                <Button Style="{StaticResource CleanDockButtonStyle}"
+                <!-- 4. Downloads Stack (macOS style next to Trash) -->
+                <Button x:Name="DownloadsButton"
+                        Style="{StaticResource CleanDockButtonStyle}"
+                        Click="OnDownloadsClicked"
+                        MouseEnter="OnDownloadsMouseEnter"
+                        MouseLeave="OnSpecialTileMouseLeave"
+                        Margin="3,0,3,0"
+                        AllowDrop="True"
+                        DragEnter="OnDownloadsDragEnter"
+                        DragOver="OnDownloadsDragOver"
+                        DragLeave="OnDownloadsDragLeave"
+                        Drop="OnDownloadsDrop">
+                    <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,5">
+                        <Border x:Name="DownloadsTile" Width="52" Height="52" CornerRadius="12" Background="#1AFFFFFF">
+                            <Path Data="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"
+                                  Fill="{DynamicResource DockGlyph}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </Grid>
+                </Button>
+
+                <!-- 5. Recycle Bin (Trash) with Drag & Drop support -->
+                <Button x:Name="TrashButton"
+                        Style="{StaticResource CleanDockButtonStyle}"
                         Click="OnRecycleBinClicked"
-                        ToolTip="Recycle Bin"
-                        Margin="3,0,3,0">
+                        MouseEnter="OnTrashMouseEnter"
+                        MouseLeave="OnSpecialTileMouseLeave"
+                        Margin="3,0,3,0"
+                        AllowDrop="True"
+                        DragEnter="OnTrashDragEnter"
+                        DragOver="OnTrashDragOver"
+                        DragLeave="OnTrashDragLeave"
+                        Drop="OnTrashDrop">
                     <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,5">
                         <Border x:Name="TrashTile" Width="52" Height="52" CornerRadius="12" Background="#1AFFFFFF">
-                            <Path Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                            <Path x:Name="TrashGlyph" Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
                                   Fill="{DynamicResource DockGlyph}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                     </Grid>
@@ -300,5 +296,30 @@
 
             </StackPanel>
         </Border>
+
+        <!-- macOS Floating Tooltip Bubble (Popup so it doesn't force extra HWND space or blur rectangle) -->
+        <Popup x:Name="MacTooltipPopup"
+               PlacementTarget="{Binding ElementName=DockBar}"
+               Placement="Top"
+               AllowsTransparency="True"
+               IsOpen="False">
+            <Border x:Name="MacTooltipBubble"
+                    Background="#E60F172A"
+                    BorderBrush="#40FFFFFF"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="10,4"
+                    Margin="0,0,0,6">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="3" Direction="270" Color="#000000" Opacity="0.5" />
+                </Border.Effect>
+                <TextBlock x:Name="MacTooltipText"
+                           Text="App Title"
+                           Foreground="#F8FAFC"
+                           FontSize="11.5"
+                           FontWeight="SemiBold"
+                           FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
+            </Border>
+        </Popup>
     </Grid>
 </Window>

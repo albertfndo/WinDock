@@ -31,6 +31,8 @@ namespace WinDock.Views
         private List<SpotlightItem> _filtered = new();
         private int _page;
         private int _pageSize = 35;
+        private int _cols = 6;
+        private int _selectedIndex = -1;
         private int _wheelAccum;
         private DateTime _lastPageFlip = DateTime.MinValue;
 
@@ -110,6 +112,7 @@ namespace WinDock.Views
             // Leave room for the search row on top and the page dots + dock at the bottom.
             int cols = Math.Clamp((int)((Width - 160) / TileSize), 3, 8);
             int rows = Math.Clamp((int)((Height - 300) / TileSize), 2, 5);
+            _cols = cols;
             _pageSize = cols * rows;
             AppsItemsControl.Width = cols * TileSize;
         }
@@ -123,6 +126,7 @@ namespace WinDock.Views
                 ? _allApps
                 : _allApps.Where(a => a.Title.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
             _page = 0;
+            _selectedIndex = -1;
             ShowPage();
         }
 
@@ -352,6 +356,8 @@ namespace WinDock.Views
         {
             bool inSearch = SearchBox.IsKeyboardFocusWithin;
             bool searchEmpty = SearchBox.Text.Length == 0;
+            var currentItems = (AppsItemsControl.ItemsSource as List<SpotlightItem>) ?? new List<SpotlightItem>();
+            int itemCount = currentItems.Count;
 
             switch (e.Key)
             {
@@ -360,26 +366,125 @@ namespace WinDock.Views
                     else Hide();
                     e.Handled = true;
                     break;
+
+                // Move focus down into apps grid from search box
+                case Key.Down when inSearch:
+                    if (itemCount > 0)
+                    {
+                        _selectedIndex = 0;
+                        FocusTileAt(_selectedIndex);
+                        e.Handled = true;
+                    }
+                    break;
+
+                // Navigate within grid using arrow keys
+                case Key.Down when !inSearch && _selectedIndex >= 0:
+                    if (_selectedIndex + _cols < itemCount)
+                    {
+                        _selectedIndex += _cols;
+                        FocusTileAt(_selectedIndex);
+                        e.Handled = true;
+                    }
+                    break;
+
+                case Key.Up when !inSearch && _selectedIndex >= 0:
+                    if (_selectedIndex - _cols >= 0)
+                    {
+                        _selectedIndex -= _cols;
+                        FocusTileAt(_selectedIndex);
+                        e.Handled = true;
+                    }
+                    else
+                    {
+                        _selectedIndex = -1;
+                        SearchBox.Focus();
+                        SearchBox.SelectAll();
+                        e.Handled = true;
+                    }
+                    break;
+
+                case Key.Right when !inSearch && _selectedIndex >= 0:
+                    if (_selectedIndex + 1 < itemCount)
+                    {
+                        _selectedIndex++;
+                        FocusTileAt(_selectedIndex);
+                        e.Handled = true;
+                    }
+                    else if (_page < PageCount - 1)
+                    {
+                        ChangePage(1);
+                        _selectedIndex = 0;
+                        Dispatcher.BeginInvoke(new Action(() => FocusTileAt(_selectedIndex)), System.Windows.Threading.DispatcherPriority.Loaded);
+                        e.Handled = true;
+                    }
+                    break;
+
+                case Key.Left when !inSearch && _selectedIndex >= 0:
+                    if (_selectedIndex - 1 >= 0)
+                    {
+                        _selectedIndex--;
+                        FocusTileAt(_selectedIndex);
+                        e.Handled = true;
+                    }
+                    else if (_page > 0)
+                    {
+                        ChangePage(-1);
+                        _selectedIndex = Math.Max(0, Math.Min(_pageSize - 1, _filtered.Count - _page * _pageSize - 1));
+                        Dispatcher.BeginInvoke(new Action(() => FocusTileAt(_selectedIndex)), System.Windows.Threading.DispatcherPriority.Loaded);
+                        e.Handled = true;
+                    }
+                    break;
+
                 case Key.Enter when inSearch:
-                    if (AppsItemsControl.ItemsSource is IEnumerable<SpotlightItem> visible && visible.FirstOrDefault() is SpotlightItem first)
-                        Launch(first);
+                    if (currentItems.Count > 0) Launch(currentItems[0]);
                     e.Handled = true;
                     break;
+
+                case Key.Enter when !inSearch && _selectedIndex >= 0 && _selectedIndex < currentItems.Count:
+                    Launch(currentItems[_selectedIndex]);
+                    e.Handled = true;
+                    break;
+
                 case Key.PageDown:
                 case Key.Right when inSearch && searchEmpty:
                     ChangePage(1);
                     e.Handled = true;
                     break;
+
                 case Key.PageUp:
                 case Key.Left when inSearch && searchEmpty:
                     ChangePage(-1);
                     e.Handled = true;
                     break;
+
                 case Key.F1:
                     OnHelpClicked(sender, e);
                     e.Handled = true;
                     break;
             }
+        }
+
+        private void FocusTileAt(int index)
+        {
+            if (index < 0) return;
+            AppsItemsControl.UpdateLayout();
+            if (AppsItemsControl.ItemContainerGenerator.ContainerFromIndex(index) is FrameworkElement container)
+            {
+                var btn = container as Button ?? FindVisualChild<Button>(container);
+                btn?.Focus();
+            }
+        }
+
+        private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T typed) return typed;
+                var found = FindVisualChild<T>(child);
+                if (found != null) return found;
+            }
+            return null;
         }
 
         private void OnBackdropClicked(object sender, MouseButtonEventArgs e)

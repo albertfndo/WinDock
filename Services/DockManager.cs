@@ -22,7 +22,12 @@ namespace WinDock.Services
         public ObservableCollection<DockItem> PinnedItems => _pinnedItems;
         public ObservableCollection<DockItem> RunningItems => _runningItems;
 
+        // Semantic aliases for Open and Closed apps
+        public ObservableCollection<DockItem> ClosedItems => _pinnedItems;
+        public ObservableCollection<DockItem> OpenItems => _runningItems;
+
         public bool HasRunningItems => _runningItems.Count > 0;
+        public bool HasDivider => _runningItems.Count > 0 && _pinnedItems.Count > 0;
 
         public IEnumerable<DockItem> AllItems => _pinnedItems.Concat(_runningItems);
         public IEnumerable<DockItem> DockItems => AllItems;
@@ -37,14 +42,46 @@ namespace WinDock.Services
             _runningItems.CollectionChanged += (s, e) =>
             {
                 OnPropertyChanged(nameof(HasRunningItems));
+                OnPropertyChanged(nameof(HasDivider));
+            };
+
+            _pinnedItems.CollectionChanged += (s, e) =>
+            {
+                OnPropertyChanged(nameof(HasDivider));
             };
 
             InitializePinnedItems();
         }
 
+        public void ReorderItems(DockItem source, DockItem target)
+        {
+            if (source == target) return;
+
+            if (_pinnedItems.Contains(source) && _pinnedItems.Contains(target))
+            {
+                int oldIdx = _pinnedItems.IndexOf(source);
+                int newIdx = _pinnedItems.IndexOf(target);
+                if (oldIdx >= 0 && newIdx >= 0)
+                {
+                    _pinnedItems.Move(oldIdx, newIdx);
+                    SavePinnedState();
+                }
+            }
+            else if (_runningItems.Contains(source) && _runningItems.Contains(target))
+            {
+                int oldIdx = _runningItems.IndexOf(source);
+                int newIdx = _runningItems.IndexOf(target);
+                if (oldIdx >= 0 && newIdx >= 0)
+                {
+                    _runningItems.Move(oldIdx, newIdx);
+                }
+            }
+        }
+
         public void InitializePinnedItems()
         {
             _pinnedItems.Clear();
+            _runningItems.Clear();
 
             foreach (var pin in _settingsService.CurrentSettings.PinnedApps)
             {

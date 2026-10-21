@@ -62,7 +62,7 @@ namespace WinDock.Native
         /// Paints the solid-to-glass dock material. Shared by the dock and the Settings/Wizard live previews.
         /// glass: 1.0 = solid, 0.1 = ultra frosted.
         /// </summary>
-        public static void PaintDock(Border border, Color baseColor, double glass)
+        public static void PaintDock(Border border, Color baseColor, double glass, double blurIntensity = 0.85)
         {
             if (glass >= 0.95)
             {
@@ -71,14 +71,91 @@ namespace WinDock.Native
                 return;
             }
 
-            byte alpha = (byte)Math.Clamp((int)(glass * 255), 25, 255);
-            var top = Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B);
-            var bottom = Color.FromArgb((byte)Math.Min(255, alpha + 20), (byte)(baseColor.R * 0.7), (byte)(baseColor.G * 0.7), (byte)(baseColor.B * 0.7));
+            // Live responsive glass opacity from 0.05 (sheer glass) to 1.0 (solid matte)
+            double effectiveGlass = Math.Clamp(glass, 0.05, 1.0);
+            byte topAlpha = (byte)Math.Clamp((int)(effectiveGlass * 240), 25, 245);
+            byte bottomAlpha = (byte)Math.Clamp((int)(topAlpha + 25), 45, 255);
+
+            // Specular diffusion & luminous sheen controlled directly by BlurIntensity slider
+            int highlight = (int)(32 * blurIntensity);
+            var top = Color.FromArgb(
+                topAlpha,
+                (byte)Math.Min(255, baseColor.R + highlight),
+                (byte)Math.Min(255, baseColor.G + highlight),
+                (byte)Math.Min(255, baseColor.B + highlight + 5));
+
+            var bottom = Color.FromArgb(
+                bottomAlpha,
+                (byte)(baseColor.R * 0.70),
+                (byte)(baseColor.G * 0.70),
+                (byte)(baseColor.B * 0.75));
+
             border.Background = new LinearGradientBrush(top, bottom, 90);
+
+            // Specular border intensity scales dynamically with blurIntensity slider
+            byte borderTopAlpha = (byte)Math.Clamp((int)(0x25 + 0x55 * blurIntensity), 0x20, 0x95);
+            byte borderBottomAlpha = (byte)Math.Clamp((int)(0x10 + 0x25 * blurIntensity), 0x0C, 0x40);
+            border.BorderThickness = new Thickness(1);
             border.BorderBrush = new LinearGradientBrush(
-                Color.FromArgb((byte)Math.Min(255, alpha * 0.5 + 40), 255, 255, 255),
-                Color.FromArgb((byte)Math.Min(255, alpha * 0.2 + 15), 255, 255, 255),
+                Color.FromArgb(borderTopAlpha, 255, 255, 255),
+                Color.FromArgb(borderBottomAlpha, 255, 255, 255),
                 90);
+        }
+
+        /// <summary>
+        /// Disables rectangular DWM composition blur (ACCENT_DISABLED) to eliminate square blur bleed and corners.
+        /// Genuine anti-aliased rounded frosted glass is rendered natively in WPF vector layers with dynamic specular sheen.
+        /// </summary>
+        public static void ApplyWindowBlur(IntPtr hwnd, Color baseColor, double blurIntensity)
+        {
+            if (hwnd == IntPtr.Zero) return;
+
+            try
+            {
+                var policy = new NativeMethods.AccentPolicy
+                {
+                    AccentState = NativeMethods.AccentState.ACCENT_DISABLED,
+                    AccentFlags = 0,
+                    GradientColor = 0,
+                    AnimationId = 0
+                };
+
+                SetAccentPolicy(hwnd, policy);
+                NativeMethods.SetWindowRgn(hwnd, IntPtr.Zero, true);
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Reset region when DWM blur is disabled, allowing WPF subpixel anti-aliasing to render smooth rounded edges.
+        /// </summary>
+        public static void UpdateDockWindowRegion(IntPtr hwnd, FrameworkElement? dockBar = null, double borderRadius = 28)
+        {
+            if (hwnd != IntPtr.Zero)
+            {
+                try { NativeMethods.SetWindowRgn(hwnd, IntPtr.Zero, true); } catch { }
+            }
+        }
+
+        private static void SetAccentPolicy(IntPtr hwnd, NativeMethods.AccentPolicy policy)
+        {
+            int accentSize = System.Runtime.InteropServices.Marshal.SizeOf(policy);
+            IntPtr accentPtr = System.Runtime.InteropServices.Marshal.AllocHGlobal(accentSize);
+            try
+            {
+                System.Runtime.InteropServices.Marshal.StructureToPtr(policy, accentPtr, false);
+                var data = new NativeMethods.WindowCompositionAttributeData
+                {
+                    Attribute = NativeMethods.WCA_ACCENT_POLICY,
+                    Data = accentPtr,
+                    SizeOfData = accentSize
+                };
+                NativeMethods.SetWindowCompositionAttribute(hwnd, ref data);
+            }
+            finally
+            {
+                System.Runtime.InteropServices.Marshal.FreeHGlobal(accentPtr);
+            }
         }
     }
 }

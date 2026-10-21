@@ -11,6 +11,8 @@ namespace WinDock.Native
         public const int WM_CLOSE = 0x0010;
         public const int WM_HOTKEY = 0x0312;
         public const int WM_GETICON = 0x007F;
+        public const int WM_CLIPBOARDUPDATE = 0x031D;
+        public const int WM_USER = 0x0400;
         public const int ICON_SMALL = 0;
         public const int ICON_BIG = 1;
         public const int ICON_SMALL2 = 2;
@@ -22,6 +24,7 @@ namespace WinDock.Native
         public const int GWL_STYLE = -16;
 
         public const int WS_VISIBLE = 0x10000000;
+        public const int WS_EX_TRANSPARENT = 0x00000020;
         public const int WS_EX_TOOLWINDOW = 0x00000080;
         public const int WS_EX_APPWINDOW = 0x00040000;
         public const int WS_EX_NOACTIVATE = 0x08000000;
@@ -31,6 +34,7 @@ namespace WinDock.Native
         public const int SW_SHOWNORMAL = 1;
         public const int SW_SHOWMINIMIZED = 2;
         public const int SW_SHOWMAXIMIZED = 3;
+        public const int SW_MAXIMIZE = 3;
         public const int SW_SHOWNOACTIVATE = 4;
         public const int SW_SHOW = 5;
         public const int SW_MINIMIZE = 6;
@@ -40,6 +44,7 @@ namespace WinDock.Native
         public const uint SWP_NOMOVE = 0x0002;
         public const uint SWP_NOZORDER = 0x0004;
         public const uint SWP_NOACTIVATE = 0x0010;
+        public const uint SWP_FRAMECHANGED = 0x0020;
         public const uint SWP_SHOWWINDOW = 0x0040;
         public const uint SWP_HIDEWINDOW = 0x0080;
 
@@ -284,6 +289,26 @@ namespace WinDock.Native
         [DllImport("user32.dll")]
         public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
+        public const int SM_CXSCREEN = 0;
+        public const int SM_CYSCREEN = 1;
+
+        [DllImport("user32.dll")]
+        public static extern int GetSystemMetrics(int nIndex);
+
+        public const uint MONITOR_DEFAULTTOPRIMARY = 0x00000001;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MONITORINFO
+        {
+            public int cbSize;
+            public RECT rcMonitor;
+            public RECT rcWork;
+            public uint dwFlags;
+        }
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
+
         public const uint SPI_SETWORKAREA = 0x002F;
         public const uint SPI_GETWORKAREA = 0x0030;
         public const uint SPIF_UPDATEINIFILE = 0x01;
@@ -323,8 +348,19 @@ namespace WinDock.Native
         public const byte VK_VOLUME_MUTE = 0xAD;
         public const byte VK_VOLUME_DOWN = 0xAE;
         public const byte VK_VOLUME_UP = 0xAF;
+        public const byte VK_MEDIA_NEXT_TRACK = 0xB0;
+        public const byte VK_MEDIA_PREV_TRACK = 0xB1;
+        public const byte VK_MEDIA_STOP = 0xB2;
+        public const byte VK_MEDIA_PLAY_PAUSE = 0xB3;
         public const byte VK_D = 0x44;
 
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool AddClipboardFormatListener(IntPtr hwnd);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
 
         #endregion
 
@@ -332,6 +368,31 @@ namespace WinDock.Native
 
         [DllImport("shell32.dll", CallingConvention = CallingConvention.StdCall)]
         public static extern uint SHAppBarMessage(int dwMessage, ref APPBARDATA pData);
+
+        public const uint FO_DELETE = 0x0003;
+        public const ushort FOF_ALLOWUNDO = 0x0040;
+        public const ushort FOF_NOCONFIRMATION = 0x0010;
+        public const ushort FOF_SILENT = 0x0004;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct SHFILEOPSTRUCT
+        {
+            public IntPtr hwnd;
+            public uint wFunc;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string pFrom;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string? pTo;
+            public ushort fFlags;
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool fAnyOperationsAborted;
+            public IntPtr hNameMappings;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string? lpszProgressTitle;
+        }
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        public static extern int SHFileOperation(ref SHFILEOPSTRUCT lpFileOp);
 
         [DllImport("shell32.dll", CharSet = CharSet.Auto)]
         public static extern uint ExtractIconEx(string szFileName, int nIconIndex, IntPtr[]? phiconLarge, IntPtr[]? phiconSmall, uint nIcons);
@@ -397,13 +458,83 @@ namespace WinDock.Native
 
         #endregion
 
-        #region Dwmapi.dll
+        #region Dwmapi.dll & User32 Blur/Acrylic
+
+        public const uint DWM_BB_ENABLE = 0x00000001;
+        public const uint DWM_BB_BLURREGION = 0x00000002;
+        public const uint DWM_BB_TRANSITIONONMAXIMIZED = 0x00000004;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct DWM_BLURBEHIND
+        {
+            public uint dwFlags;
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool fEnable;
+            public IntPtr hRgnBlur;
+            [MarshalAs(UnmanagedType.Bool)]
+            public bool fTransitionOnMaximized;
+        }
+
+        [DllImport("dwmapi.dll")]
+        public static extern int DwmEnableBlurBehindWindow(IntPtr hWnd, ref DWM_BLURBEHIND pBlurBehind);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetDC(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        public static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        [DllImport("gdi32.dll")]
+        public static extern bool BitBlt(IntPtr hObject, int nXDest, int nYDest, int nWidth, int nHeight, IntPtr hObjSource, int nXSrc, int nYSrc, int dwRop);
+
+        public const int SRCCOPY = 0x00CC0020;
+
+        [DllImport("gdi32.dll")]
+        public static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int cx, int cy);
+
+        [DllImport("user32.dll")]
+        public static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
+
+        [DllImport("gdi32.dll")]
+        public static extern bool DeleteObject(IntPtr hObject);
 
         [DllImport("dwmapi.dll")]
         public static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
 
         [DllImport("dwmapi.dll")]
         public static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
+        public enum AccentState
+        {
+            ACCENT_DISABLED = 0,
+            ACCENT_ENABLE_GRADIENT = 1,
+            ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
+            ACCENT_ENABLE_BLURBEHIND = 3,
+            ACCENT_ENABLE_ACRYLICBLURBEHIND = 4,
+            ACCENT_ENABLE_HOSTBACKDROP = 5
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct AccentPolicy
+        {
+            public AccentState AccentState;
+            public int AccentFlags;
+            public int GradientColor;
+            public int AnimationId;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WindowCompositionAttributeData
+        {
+            public int Attribute;
+            public IntPtr Data;
+            public int SizeOfData;
+        }
+
+        public const int WCA_ACCENT_POLICY = 19;
+
+        [DllImport("user32.dll")]
+        public static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 
         #endregion
 
@@ -432,6 +563,31 @@ namespace WinDock.Native
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         public static extern IntPtr GetModuleHandle(string? lpModuleName);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public class MEMORYSTATUSEX
+        {
+            public uint dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+            public uint dwMemoryLoad;
+            public ulong ullTotalPhys;
+            public ulong ullAvailPhys;
+            public ulong ullTotalPageFile;
+            public ulong ullAvailPageFile;
+            public ulong ullTotalVirtual;
+            public ulong ullAvailVirtual;
+            public ulong ullAvailExtendedVirtual;
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX lpBuffer);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetSystemTimes(
+            out System.Runtime.InteropServices.ComTypes.FILETIME lpIdleTime,
+            out System.Runtime.InteropServices.ComTypes.FILETIME lpKernelTime,
+            out System.Runtime.InteropServices.ComTypes.FILETIME lpUserTime);
 
         #endregion
 

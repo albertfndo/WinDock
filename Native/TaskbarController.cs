@@ -46,6 +46,9 @@ namespace WinDock.Native
         {
             try
             {
+                // Collapse the AppBar reservation first so Windows releases the bottom work area
+                SetTaskbarAutoHide(true);
+
                 IntPtr primary = GetPrimaryTaskbarHandle();
                 if (primary != IntPtr.Zero)
                 {
@@ -94,6 +97,9 @@ namespace WinDock.Native
                     NativeMethods.EnableWindow(secondary, true);
                     NativeMethods.ShowWindow(secondary, NativeMethods.SW_SHOW);
                 }
+
+                // Restore taskbar autohide state
+                SetTaskbarAutoHide(false);
 
                 IntPtr startBtn = NativeMethods.FindWindowEx(IntPtr.Zero, IntPtr.Zero, "Button", "Start");
                 if (startBtn != IntPtr.Zero)

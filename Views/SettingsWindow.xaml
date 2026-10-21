@@ -15,14 +15,14 @@
 
     <Window.Resources>
         <Style x:Key="ModernToggle" TargetType="CheckBox">
-            <Setter Property="Foreground" Value="#F1F5F9" />
+            <Setter Property="Foreground" Value="#F4F4F5" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Margin" Value="0,5" />
         </Style>
 
         <Style x:Key="ActionButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#2563EB" />
+            <Setter Property="Background" Value="#0A84FF" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="12" />
@@ -45,20 +45,20 @@
     <Border CornerRadius="18" Padding="22">
         <Border.Background>
             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#F00F172A" Offset="0.0" />
-                <GradientStop Color="#F8080C16" Offset="1.0" />
+                <GradientStop Color="#FB111115" Offset="0.0" />
+                <GradientStop Color="#FD09090C" Offset="1.0" />
             </LinearGradientBrush>
         </Border.Background>
         <Border.BorderBrush>
             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#40FFFFFF" Offset="0.0" />
-                <GradientStop Color="#18FFFFFF" Offset="1.0" />
+                <GradientStop Color="#28FFFFFF" Offset="0.0" />
+                <GradientStop Color="#10FFFFFF" Offset="1.0" />
             </LinearGradientBrush>
         </Border.BorderBrush>
         <Border.BorderThickness>1</Border.BorderThickness>
 
         <Border.Effect>
-            <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Color="#000000" Opacity="0.7" />
+            <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Color="#000000" Opacity="0.75" />
         </Border.Effect>
 
         <Grid>
@@ -71,17 +71,17 @@
             <!-- Header -->
             <Grid Grid.Row="0" Margin="0,0,0,14">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="12" Height="12" CornerRadius="6" Background="#38BDF8" Margin="0,0,10,0">
+                    <Border Width="12" Height="12" CornerRadius="6" Background="#0A84FF" Margin="0,0,10,0">
                         <Border.Effect>
-                            <DropShadowEffect BlurRadius="8" Color="#38BDF8" ShadowDepth="0" Opacity="0.8" />
+                            <DropShadowEffect BlurRadius="8" Color="#0A84FF" ShadowDepth="0" Opacity="0.6" />
                         </Border.Effect>
                     </Border>
-                    <TextBlock Text="WinDock Preferences &amp; Design" Foreground="#F8FAFC" FontSize="16" FontWeight="Bold" />
+                    <TextBlock Text="WinDock Preferences" Foreground="#F4F4F5" FontSize="16" FontWeight="Bold" />
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <Button Content="Shortcuts" Click="OnOpenShortcutsGuideClicked"
-                            Background="#2038BDF8" Foreground="#38BDF8" BorderBrush="#4038BDF8" BorderThickness="1"
+                            Background="#1AFFFFFF" Foreground="#E4E4E7" BorderBrush="#26FFFFFF" BorderThickness="1"
                             FontSize="11" FontWeight="SemiBold" Padding="9,3" Cursor="Hand" Margin="0,0,8,0">
                         <Button.Resources>
                             <Style TargetType="Border">
@@ -90,7 +90,7 @@
                         </Button.Resources>
                     </Button>
                     <Button Content="Setup Wizard" Click="OnRunSetupWizardClicked"
-                            Background="#2038BDF8" Foreground="#38BDF8" BorderBrush="#4038BDF8" BorderThickness="1"
+                            Background="#1AFFFFFF" Foreground="#E4E4E7" BorderBrush="#26FFFFFF" BorderThickness="1"
                             FontSize="11" FontWeight="SemiBold" Padding="9,3" Cursor="Hand" Margin="0,0,12,0">
                         <Button.Resources>
                             <Style TargetType="Border">
@@ -102,7 +102,7 @@
                             Click="OnCloseClicked"
                         VerticalAlignment="Center"
                         Background="Transparent"
-                        Foreground="#94A3B8"
+                        Foreground="#71717A"
                         BorderThickness="0"
                         FontSize="14"
                         Cursor="Hand" />
@@ -113,21 +113,21 @@
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
 
-                    <!-- Section: Style & Appearance (User Requested: Solid to Glass + Border Radius) -->
-                    <TextBlock Text="DOCK MATERIAL &amp; SHAPE" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+                    <!-- Section: Style & Appearance -->
+                    <TextBlock Text="DOCK MATERIAL &amp; SHAPE" Foreground="#A1A1AA" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
 
-                    <Border Background="#1E293B" CornerRadius="10" Padding="14,12" Margin="0,0,0,14">
+                    <Border Background="#16161C" BorderBrush="#22222A" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,0,14">
                         <StackPanel>
                             <!-- Live Interactive Preview Box -->
-                            <TextBlock Text="Live Preview" Foreground="#94A3B8" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6" />
-                            <Border Height="72" Background="#0F172A" CornerRadius="10" Padding="10" Margin="0,0,0,14" BorderBrush="#25FFFFFF" BorderThickness="1">
+                            <TextBlock Text="Live Preview" Foreground="#A1A1AA" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <Border Height="72" Background="#101014" CornerRadius="10" Padding="10" Margin="0,0,0,14" BorderBrush="#1CFFFFFF" BorderThickness="1">
                                 <!-- Preview Dock Surface -->
                                 <Border x:Name="PreviewDock"
                                         Height="52"
                                         Width="260"
                                         CornerRadius="24"
                                         BorderThickness="1"
-                                        BorderBrush="#40FFFFFF"
+                                        BorderBrush="#30FFFFFF"
                                         Padding="12,4"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center">
@@ -165,10 +165,10 @@
                             <!-- 1. Solid to Glass Slider -->
                             <Grid Margin="0,0,0,4">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Dock Style:" Foreground="#F1F5F9" FontSize="12" FontWeight="SemiBold" />
-                                    <TextBlock Text=" (Glass / Translucent ←→ Solid Matte)" Foreground="#94A3B8" FontSize="11" Margin="4,1,0,0" />
+                                    <TextBlock Text="Dock Style:" Foreground="#F4F4F5" FontSize="12" FontWeight="SemiBold" />
+                                    <TextBlock Text=" (Glass / Translucent ←→ Solid Matte)" Foreground="#71717A" FontSize="11" Margin="4,1,0,0" />
                                 </StackPanel>
-                                <TextBlock x:Name="TxtGlassValue" Text="65% Glass / 35% Solid" Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                <TextBlock x:Name="TxtGlassValue" Text="65% Glass / 35% Solid" Foreground="#0A84FF" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
                             </Grid>
                             <Slider x:Name="SliderGlassOpacity"
                                     Minimum="0.10" Maximum="1.0" Value="0.65"
@@ -176,13 +176,27 @@
                                     ValueChanged="OnGlassOpacityChanged"
                                     Margin="0,0,0,12" />
 
+                            <!-- Blur Intensity Slider (Windows DWM Acrylic / Frosted Blur) -->
+                            <Grid Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Blur Effect &amp; Intensity:" Foreground="#F4F4F5" FontSize="12" FontWeight="SemiBold" />
+                                    <TextBlock Text=" (Frosted Glass Acrylic)" Foreground="#71717A" FontSize="11" Margin="4,1,0,0" />
+                                </StackPanel>
+                                <TextBlock x:Name="TxtBlurValue" Text="85% Frosted Blur" Foreground="#0A84FF" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                            </Grid>
+                            <Slider x:Name="SliderBlurIntensity"
+                                    Minimum="0.0" Maximum="1.0" Value="0.85"
+                                    TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                    ValueChanged="OnBlurIntensityChanged"
+                                    Margin="0,0,0,12" />
+
                             <!-- 2. Border Radius Slider -->
                             <Grid Margin="0,0,0,4">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Border Radius:" Foreground="#F1F5F9" FontSize="12" FontWeight="SemiBold" />
-                                    <TextBlock Text=" (Square 0px ←→ Full Pill 40px)" Foreground="#94A3B8" FontSize="11" Margin="4,1,0,0" />
+                                    <TextBlock Text="Border Radius:" Foreground="#F4F4F5" FontSize="12" FontWeight="SemiBold" />
+                                    <TextBlock Text=" (Square 0px ←→ Full Pill 40px)" Foreground="#71717A" FontSize="11" Margin="4,1,0,0" />
                                 </StackPanel>
-                                <TextBlock x:Name="TxtRadiusValue" Text="28px" Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                <TextBlock x:Name="TxtRadiusValue" Text="28px" Foreground="#0A84FF" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
                             </Grid>
                             <Slider x:Name="SliderBorderRadius"
                                     Minimum="0" Maximum="40" Value="28"
@@ -194,33 +208,33 @@
                             <CheckBox x:Name="ChkAutoTheme" Style="{StaticResource ModernToggle}"
                                       Content="Auto-adapt to Windows Theme (Dark Glass / Light Glass)" />
                             <TextBlock Text="Dynamically switches dock glass between Dark Glass and Light Glass based on Windows system theme."
-                                       Foreground="#94A3B8" FontSize="10" Margin="24,-2,0,10" />
+                                       Foreground="#71717A" FontSize="10" Margin="24,-2,0,10" />
 
                             <!-- 3. Dock Tint Palette -->
-                            <TextBlock Text="Background Tint" Foreground="#F1F5F9" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <TextBlock Text="Background Tint" Foreground="#F4F4F5" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,6" />
                             <StackPanel Orientation="Horizontal">
-                                <Button Click="OnTintSlateClicked" Background="#4B5563" Foreground="White" Padding="10,5" FontSize="11" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}">
+                                <Button Click="OnTintSlateClicked" Background="#22222A" BorderBrush="#33333F" BorderThickness="1" Foreground="#F4F4F5" Padding="10,5" FontSize="11" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Border Width="8" Height="8" CornerRadius="4" Background="#6B7280" Margin="0,0,6,0" />
+                                        <Border Width="8" Height="8" CornerRadius="4" Background="#4B5563" Margin="0,0,6,0" />
                                         <TextBlock Text="Slate Gray" />
                                     </StackPanel>
                                 </Button>
-                                <Button Click="OnTintCharcoalClicked" Background="#1F2937" Foreground="White" Padding="10,5" FontSize="11" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}">
+                                <Button Click="OnTintCharcoalClicked" Background="#181820" BorderBrush="#2A2A34" BorderThickness="1" Foreground="#F4F4F5" Padding="10,5" FontSize="11" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Border Width="8" Height="8" CornerRadius="4" Background="#374151" Margin="0,0,6,0" />
+                                        <Border Width="8" Height="8" CornerRadius="4" Background="#27272A" Margin="0,0,6,0" />
                                         <TextBlock Text="Dark Charcoal" />
                                     </StackPanel>
                                 </Button>
-                                <Button Click="OnTintOledClicked" Background="#0B0F17" Foreground="White" Padding="10,5" FontSize="11" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}">
+                                <Button Click="OnTintOledClicked" Background="#0E0E12" BorderBrush="#22222A" BorderThickness="1" Foreground="#F4F4F5" Padding="10,5" FontSize="11" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Border Width="8" Height="8" CornerRadius="4" Background="#1E293B" Margin="0,0,6,0" />
+                                        <Border Width="8" Height="8" CornerRadius="4" Background="#0A0A0C" Margin="0,0,6,0" />
                                         <TextBlock Text="OLED Black" />
                                     </StackPanel>
                                 </Button>
-                                <Button Click="OnTintMidnightClicked" Background="#0F172A" Foreground="White" Padding="10,5" FontSize="11" Style="{StaticResource ActionButtonStyle}">
+                                <Button Click="OnTintMidnightClicked" Background="#10121C" BorderBrush="#222638" BorderThickness="1" Foreground="#F4F4F5" Padding="10,5" FontSize="11" Style="{StaticResource ActionButtonStyle}">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Border Width="8" Height="8" CornerRadius="4" Background="#2563EB" Margin="0,0,6,0" />
-                                        <TextBlock Text="Midnight Blue" />
+                                        <Border Width="8" Height="8" CornerRadius="4" Background="#1E293B" Margin="0,0,6,0" />
+                                        <TextBlock Text="Midnight" />
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
@@ -228,60 +242,60 @@
                     </Border>
 
                     <!-- Section: Taskbar & Screen Integration -->
-                    <TextBlock Text="TASKBAR &amp; SCREEN INTEGRATION" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+                    <TextBlock Text="TASKBAR &amp; SCREEN INTEGRATION" Foreground="#A1A1AA" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
 
-                    <Border Background="#1E293B" CornerRadius="10" Padding="14,8" Margin="0,0,0,14">
+                    <Border Background="#16161C" BorderBrush="#22222A" BorderThickness="1" CornerRadius="10" Padding="14,8" Margin="0,0,0,14">
                         <StackPanel>
                             <CheckBox x:Name="ChkLaunchAtStartup" Style="{StaticResource ModernToggle}"
                                       Content="Start WinDock automatically with Windows (System Startup)" />
                             <TextBlock Text="Launches WinDock seamlessly whenever you turn on or log into your PC."
-                                       Foreground="#94A3B8" FontSize="10" Margin="24,-2,0,6" />
+                                       Foreground="#71717A" FontSize="10" Margin="24,-2,0,6" />
 
                             <CheckBox x:Name="ChkHideTaskbar" Style="{StaticResource ModernToggle}"
                                       Content="Hide Windows Taskbar automatically when WinDock runs" />
                             <TextBlock Text="Replaces Windows taskbar with WinDock. Restores automatically when WinDock exits."
-                                       Foreground="#94A3B8" FontSize="10" Margin="24,-2,0,6" />
+                                       Foreground="#71717A" FontSize="10" Margin="24,-2,0,6" />
 
                             <CheckBox x:Name="ChkReserveSpace" Style="{StaticResource ModernToggle}"
                                       Content="Reserve Screen Space (AppBar Mode)" />
                             <TextBlock Text="Prevents maximized windows from overlapping the dock."
-                                       Foreground="#94A3B8" FontSize="10" Margin="24,-2,0,6" />
+                                       Foreground="#71717A" FontSize="10" Margin="24,-2,0,6" />
 
                             <CheckBox x:Name="ChkAutoHide" Style="{StaticResource ModernToggle}"
                                       Content="Auto-hide Dock when mouse leaves screen bottom" />
                             <TextBlock Text="Dock smoothly slides down and reveals when cursor touches the bottom edge."
-                                       Foreground="#94A3B8" FontSize="10" Margin="24,-2,0,2" />
+                                       Foreground="#71717A" FontSize="10" Margin="24,-2,0,2" />
                         </StackPanel>
                     </Border>
 
                     <!-- Section: Dynamic Drop Notch Shelf -->
-                    <TextBlock Text="DYNAMIC DROP NOTCH (TOP SHELF)" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+                    <TextBlock Text="DYNAMIC DROP NOTCH (TOP SHELF)" Foreground="#A1A1AA" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
 
-                    <Border Background="#1E293B" CornerRadius="10" Padding="14,10" Margin="0,0,0,14">
+                    <Border Background="#16161C" BorderBrush="#22222A" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="0,0,0,14">
                         <StackPanel>
                             <CheckBox x:Name="ChkEnableNotch" Style="{StaticResource ModernToggle}"
                                       Content="Enable Dynamic Drop Notch at top of screen" />
                             <TextBlock Text="Top-screen notch shelf: drag files/links in to hold temporarily, and drag out into any app."
-                                       Foreground="#94A3B8" FontSize="10" Margin="24,-2,0,0" />
+                                       Foreground="#71717A" FontSize="10" Margin="24,-2,0,0" />
                         </StackPanel>
                     </Border>
 
                     <!-- Section: Magnification & Size -->
-                    <TextBlock Text="HOVER ZOOM &amp; SIZING" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+                    <TextBlock Text="HOVER ZOOM &amp; SIZING" Foreground="#A1A1AA" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
 
-                    <Border Background="#1E293B" CornerRadius="10" Padding="14,10" Margin="0,0,0,14">
+                    <Border Background="#16161C" BorderBrush="#22222A" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="0,0,0,14">
                         <StackPanel>
                             <Grid Margin="0,0,0,4">
-                                <TextBlock Text="Hover Zoom Magnification" Foreground="#F1F5F9" FontSize="12" />
-                                <TextBlock x:Name="TxtMagValue" Text="1.35x" Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                <TextBlock Text="Hover Zoom Magnification" Foreground="#F4F4F5" FontSize="12" />
+                                <TextBlock x:Name="TxtMagValue" Text="1.35x" Foreground="#0A84FF" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
                             </Grid>
                             <Slider x:Name="SliderMagnification" Minimum="1.0" Maximum="1.8" Value="1.35"
                                     TickFrequency="0.05" IsSnapToTickEnabled="True"
                                     ValueChanged="OnMagnificationChanged" Margin="0,0,0,10" />
 
                             <Grid Margin="0,0,0,4">
-                                <TextBlock Text="Dock Icon Size" Foreground="#F1F5F9" FontSize="12" />
-                                <TextBlock x:Name="TxtIconSizeValue" Text="52px" Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                                <TextBlock Text="Dock Icon Size" Foreground="#F4F4F5" FontSize="12" />
+                                <TextBlock x:Name="TxtIconSizeValue" Text="52px" Foreground="#0A84FF" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
                             </Grid>
                             <Slider x:Name="SliderIconSize" Minimum="36" Maximum="72" Value="52"
                                     TickFrequency="2" IsSnapToTickEnabled="True"
@@ -290,14 +304,14 @@
                     </Border>
 
                     <!-- Section: Customizable Shortcuts -->
-                    <TextBlock Text="GLOBAL KEYBOARD SHORTCUTS" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+                    <TextBlock Text="GLOBAL KEYBOARD SHORTCUTS" Foreground="#A1A1AA" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
 
-                    <Border Background="#1E293B" CornerRadius="10" Padding="14,10" Margin="0,0,0,14">
+                    <Border Background="#16161C" BorderBrush="#22222A" BorderThickness="1" CornerRadius="10" Padding="14,10" Margin="0,0,0,14">
                         <StackPanel>
                             <Grid Margin="0,0,0,8">
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Spotlight Search Shortcut" Foreground="#F1F5F9" FontSize="12" />
-                                    <TextBlock Text="Opens MacBook-style Spotlight search &amp; calculator" Foreground="#94A3B8" FontSize="10" />
+                                    <TextBlock Text="Spotlight Search Shortcut" Foreground="#F4F4F5" FontSize="12" />
+                                    <TextBlock Text="Opens MacBook-style Spotlight search &amp; calculator" Foreground="#71717A" FontSize="10" />
                                 </StackPanel>
                                 <ComboBox x:Name="ComboSpotlightKey" HorizontalAlignment="Right" Width="170" VerticalAlignment="Center">
                                     <ComboBoxItem Content="Alt+Space (Default)" Tag="Alt+Space" />
@@ -308,8 +322,8 @@
 
                             <Grid Margin="0,0,0,2">
                                 <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Toggle Taskbar Shortcut" Foreground="#F1F5F9" FontSize="12" />
-                                    <TextBlock Text="Shows or hides Windows native taskbar" Foreground="#94A3B8" FontSize="10" />
+                                    <TextBlock Text="Toggle Taskbar Shortcut" Foreground="#F4F4F5" FontSize="12" />
+                                    <TextBlock Text="Shows or hides Windows native taskbar" Foreground="#71717A" FontSize="10" />
                                 </StackPanel>
                                 <ComboBox x:Name="ComboTaskbarKey" HorizontalAlignment="Right" Width="170" VerticalAlignment="Center">
                                     <ComboBoxItem Content="Win+Alt+D (Default)" Tag="Win+Alt+D" />
@@ -341,10 +355,14 @@
 
             <!-- Bottom Buttons -->
             <Grid Grid.Row="2" Margin="0,14,0,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+                    <TextBlock x:Name="TxtSaveStatus" Text="✓ Settings saved &amp; applied" Foreground="#4ADE80" FontSize="11" FontWeight="SemiBold"
+                               Visibility="Collapsed" VerticalAlignment="Center" Margin="4,0,0,0" />
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Exit WinDock" Click="OnExitWinDockClicked" Background="#7F1D1D" Foreground="#FCA5A5" Style="{StaticResource ActionButtonStyle}" Margin="0,0,12,0" />
-                    <Button Content="Cancel" Click="OnCloseClicked" Background="#334155" Style="{StaticResource ActionButtonStyle}" Margin="0,0,8,0" />
-                    <Button Content="Save &amp; Apply" Click="OnSaveClicked" Style="{StaticResource ActionButtonStyle}" />
+                    <Button Content="Exit WinDock" Click="OnExitWinDockClicked" Background="#351518" BorderBrush="#55EF4444" BorderThickness="1" Foreground="#FCA5A5" Style="{StaticResource ActionButtonStyle}" Margin="0,0,12,0" />
+                    <Button Content="Close" Click="OnCloseClicked" Background="#202026" BorderBrush="#2C2C36" BorderThickness="1" Foreground="#D4D4D8" Style="{StaticResource ActionButtonStyle}" Margin="0,0,8,0" />
+                    <Button x:Name="BtnSave" Content="Save &amp; Apply" Click="OnSaveClicked" Style="{StaticResource ActionButtonStyle}" />
                 </StackPanel>
             </Grid>
         </Grid>

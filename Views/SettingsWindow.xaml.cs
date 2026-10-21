@@ -43,11 +43,13 @@ namespace WinDock.Views
             _selectedTint = s.DockTint ?? "#4B5563";
 
             SliderGlassOpacity.Value = s.GlassOpacity;
+            SliderBlurIntensity.Value = s.BlurIntensity;
             SliderBorderRadius.Value = s.BorderRadius;
             SliderMagnification.Value = s.MagnificationScale;
             SliderIconSize.Value = s.IconSize;
 
             UpdateGlassLabel(s.GlassOpacity);
+            UpdateBlurLabel(s.BlurIntensity);
             UpdateRadiusLabel(s.BorderRadius);
             UpdateMagnificationLabel(s.MagnificationScale);
             UpdateIconSizeLabel(s.IconSize);
@@ -60,6 +62,21 @@ namespace WinDock.Views
             if (!_isLoaded) return;
             UpdateGlassLabel(e.NewValue);
             UpdatePreview();
+
+            var current = _settingsService.CurrentSettings;
+            current.GlassOpacity = Math.Round(e.NewValue, 2);
+            _settingsService.SaveSettings(current);
+        }
+
+        private void OnBlurIntensityChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (!_isLoaded) return;
+            UpdateBlurLabel(e.NewValue);
+            UpdatePreview();
+
+            var current = _settingsService.CurrentSettings;
+            current.BlurIntensity = Math.Round(e.NewValue, 2);
+            _settingsService.SaveSettings(current);
         }
 
         private void OnBorderRadiusChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -67,6 +84,10 @@ namespace WinDock.Views
             if (!_isLoaded) return;
             UpdateRadiusLabel(e.NewValue);
             UpdatePreview();
+
+            var current = _settingsService.CurrentSettings;
+            current.BorderRadius = Math.Round(e.NewValue, 0);
+            _settingsService.SaveSettings(current);
         }
 
         private void OnMagnificationChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -98,6 +119,17 @@ namespace WinDock.Views
                 int solidPct = (int)Math.Round(val * 100);
                 TxtGlassValue.Text = $"{100 - solidPct}% Glass / {solidPct}% Solid";
             }
+        }
+
+        private void UpdateBlurLabel(double val)
+        {
+            if (TxtBlurValue == null) return;
+            if (val <= 0.05)
+                TxtBlurValue.Text = "Blur Disabled (Flat)";
+            else if (val >= 0.90)
+                TxtBlurValue.Text = "Maximum Frosted Blur (100%)";
+            else
+                TxtBlurValue.Text = $"{(int)Math.Round(val * 100)}% Frosted Blur";
         }
 
         private void UpdateRadiusLabel(double val)
@@ -134,10 +166,11 @@ namespace WinDock.Views
 
             double radius = SliderBorderRadius.Value;
             double glass = SliderGlassOpacity.Value;
+            double blur = SliderBlurIntensity != null ? SliderBlurIntensity.Value : 0.85;
 
             PreviewDock.CornerRadius = new CornerRadius(radius);
 
-            ThemeHelper.PaintDock(PreviewDock, ThemeHelper.ParseColor(_selectedTint, Color.FromRgb(75, 85, 99)), glass);
+            ThemeHelper.PaintDock(PreviewDock, ThemeHelper.ParseColor(_selectedTint, Color.FromRgb(75, 85, 99)), glass, blur);
         }
 
         #region Tint Preset Handlers
@@ -232,14 +265,29 @@ namespace WinDock.Views
             current.TaskbarHotKey = GetSelectedTag(ComboTaskbarKey, "Win+Alt+D");
 
             current.GlassOpacity = Math.Round(SliderGlassOpacity.Value, 2);
+            if (SliderBlurIntensity != null)
+            {
+                current.BlurIntensity = Math.Round(SliderBlurIntensity.Value, 2);
+            }
             current.BorderRadius = Math.Round(SliderBorderRadius.Value, 0);
             current.DockTint = _selectedTint;
             current.MagnificationScale = Math.Round(SliderMagnification.Value, 2);
             current.IconSize = (int)SliderIconSize.Value;
 
             _settingsService.SaveSettings(current);
-            DialogResult = true;
-            Close();
+
+            // Give sleek live confirmation without abruptly dismissing the window
+            if (TxtSaveStatus != null)
+            {
+                TxtSaveStatus.Visibility = Visibility.Visible;
+                var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+                timer.Tick += (s, ev) =>
+                {
+                    TxtSaveStatus.Visibility = Visibility.Collapsed;
+                    timer.Stop();
+                };
+                timer.Start();
+            }
         }
 
         private void OnCloseClicked(object sender, RoutedEventArgs e)

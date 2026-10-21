@@ -29,20 +29,47 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Grid x:Name="tileRoot" Background="Transparent" RenderTransformOrigin="0.5,0.5">
-                            <Border x:Name="focusRing" CornerRadius="22" Margin="14,2,14,26"
-                                    BorderBrush="#CCFFFFFF" BorderThickness="0" />
-                            <ContentPresenter />
+                            <!-- Modern Frosted Selection Capsule (macOS Launchpad style) -->
+                            <Border x:Name="selectionPill"
+                                    CornerRadius="18"
+                                    Margin="4,2,4,4"
+                                    Background="Transparent"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="1.5" />
+
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsKeyboardFocused" Value="True">
-                                <Setter TargetName="focusRing" Property="BorderThickness" Value="2" />
+                            <!-- Hover state: soft translucent glass sheen -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="selectionPill" Property="Background" Value="#1CFFFFFF" />
+                                <Setter TargetName="selectionPill" Property="BorderBrush" Value="#28FFFFFF" />
                             </Trigger>
+
+                            <!-- Keyboard Focused state: refined macOS accent glow & slight lift -->
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="selectionPill" Property="Background" Value="#260A84FF" />
+                                <Setter TargetName="selectionPill" Property="BorderBrush" Value="#990A84FF" />
+                                <Setter TargetName="selectionPill" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="12" ShadowDepth="0" Color="#0A84FF" Opacity="0.65" />
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="tileRoot" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="1.04" ScaleY="1.04" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+
+                            <!-- Pressed state: tactile bounce -->
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="tileRoot" Property="RenderTransform">
                                     <Setter.Value>
-                                        <ScaleTransform ScaleX="0.92" ScaleY="0.92" />
+                                        <ScaleTransform ScaleX="0.94" ScaleY="0.94" />
                                     </Setter.Value>
                                 </Setter>
+                                <Setter TargetName="selectionPill" Property="Background" Value="#350A84FF" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

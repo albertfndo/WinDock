@@ -27,6 +27,7 @@ namespace WinDock.Views
 
         public event Action? RequestLaunchpad;
         public event Action? RequestToggleNotch;
+        public event Action? RequestReassertNotch;
 
         public MenuBarWindow()
         {
@@ -68,6 +69,7 @@ namespace WinDock.Views
             {
                 _appBar.Register(NativeMethods.ABE_TOP, (int)Math.Ceiling(BarHeight * WorkAreaHelper.GetDpiScale()));
                 PositionAtTop();
+                RequestReassertNotch?.Invoke();
             }
             else
             {
@@ -143,6 +145,58 @@ namespace WinDock.Views
         private void OnLaunchpadClicked(object sender, RoutedEventArgs e) => RequestLaunchpad?.Invoke();
 
         private void OnNotchClicked(object sender, RoutedEventArgs e) => RequestToggleNotch?.Invoke();
+
+        private void OnShowDesktopClicked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Type? shellType = Type.GetTypeFromProgID("Shell.Application");
+                if (shellType != null)
+                {
+                    object? shell = Activator.CreateInstance(shellType);
+                    shellType.InvokeMember("ToggleDesktop", System.Reflection.BindingFlags.InvokeMethod, null, shell, null);
+                    return;
+                }
+            }
+            catch { }
+
+            try
+            {
+                NativeMethods.keybd_event(NativeMethods.VK_LWIN, 0, 0, 0);
+                NativeMethods.keybd_event(0x44, 0, 0, 0); // 'D'
+                NativeMethods.keybd_event(0x44, 0, NativeMethods.KEYEVENTF_KEYUP, 0);
+                NativeMethods.keybd_event(NativeMethods.VK_LWIN, 0, NativeMethods.KEYEVENTF_KEYUP, 0);
+            }
+            catch { }
+        }
+
+        private void OnNetworkClicked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Opens Windows Available Networks / Wi-Fi flyout
+                Process.Start(new ProcessStartInfo { FileName = "ms-availablenetworks:", UseShellExecute = true });
+            }
+            catch
+            {
+                OpenUri("ms-settings:network");
+            }
+        }
+
+        private void OnVolumeClicked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Opens Windows Sound Settings / Volume Mixer
+                Process.Start(new ProcessStartInfo { FileName = "ms-settings:sound", UseShellExecute = true });
+            }
+            catch
+            {
+                try { Process.Start("sndvol.exe"); } catch { }
+            }
+        }
+
+        private void OnControlCenterClicked(object sender, RoutedEventArgs e) => ToggleQuickSettings();
 
         private void OnQuickSettingsClicked(object sender, RoutedEventArgs e) => ToggleQuickSettings();
 

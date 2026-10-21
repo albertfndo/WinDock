@@ -47,7 +47,7 @@ namespace WinDock.Views
         {
             InitializeComponent();
             Loaded += OnWindowLoaded;
-            SizeChanged += (s, e) => PositionAtBottomCenter(); // SizeToContent=Width: re-center as apps come and go
+            SizeChanged += (s, e) => PositionAtBottomCenter();
             Closed += OnWindowClosed;
         }
 
@@ -57,6 +57,15 @@ namespace WinDock.Views
 
             // Hide from Alt+Tab switcher so WinDock runs purely as a background desktop dock
             WindowHelper.HideFromAltTab(_hwnd);
+
+            // Apply DWM Blur and Theme now that HWND exists
+            ApplyAppearance(_settingsService.CurrentSettings);
+
+            DockBar.SizeChanged += (s, ev) =>
+            {
+                PositionAtBottomCenter();
+                ThemeHelper.UpdateDockWindowRegion(_hwnd, DockBar, _settingsService.CurrentSettings.BorderRadius);
+            };
 
             // 1. Initialize Dock Manager & Collections (Pinned & Running separated)
             _dockManager = new DockManager(_hwnd);
@@ -80,6 +89,7 @@ namespace WinDock.Views
             {
                 _dockManager?.HandleWindowActivated(hWnd);
                 _dockManager?.RefreshWindows();
+                _notchWindow?.EnsureTopmost();
             };
             _shellHook.WindowRedrawn += hWnd => _dockManager?.RefreshWindows();
 
@@ -95,15 +105,8 @@ namespace WinDock.Views
             if (settings.HideWindowsTaskbar)
             {
                 TaskbarController.HideTaskbar();
-                if (settings.ReserveScreenSpace)
-                {
-                    WorkAreaHelper.SetReservedWorkArea(settings.IconSize + 26, marginDip: 8);
-                }
-                else
-                {
-                    WorkAreaHelper.SetFullScreenWorkArea();
-                }
             }
+            UpdateWorkArea(settings);
 
             // 6. Spawn Dynamic Drop Notch Window if enabled
             if (settings.EnableDropNotch)
@@ -127,6 +130,7 @@ namespace WinDock.Views
             _menuBar = new MenuBarWindow();
             _menuBar.RequestLaunchpad += () => _appListWindow?.Toggle();
             _menuBar.RequestToggleNotch += ToggleNotch;
+            _menuBar.RequestReassertNotch += () => _notchWindow?.EnsureTopmost();
             SyncMenuBar();
 
             // 9. Setup Global Hotkeys (Customizable via Preferences)
@@ -140,18 +144,8 @@ namespace WinDock.Views
                     if (id == _taskbarHotKeyId)
                     {
                         TaskbarController.ToggleTaskbar();
-                        if (TaskbarController.IsTaskbarHidden)
-                        {
-                            if (_settingsService.CurrentSettings.ReserveScreenSpace)
-                                WorkAreaHelper.SetReservedWorkArea(_settingsService.CurrentSettings.IconSize + 26, 8);
-                            else
-                                WorkAreaHelper.SetFullScreenWorkArea();
-                        }
-                        else
-                        {
-                            WorkAreaHelper.RestoreOriginalWorkArea();
-                        }
                         SyncMenuBar();
+                        UpdateWorkArea(_settingsService.CurrentSettings);
                     }
                     else if (id == _spotlightHotKeyId)
                     {
@@ -252,8 +246,16 @@ namespace WinDock.Views
         private void SyncMenuBar()
         {
             if (_menuBar == null) return;
-            if (TaskbarController.IsTaskbarHidden) _menuBar.Show();
-            else _menuBar.Hide();
+            if (TaskbarController.IsTaskbarHidden)
+            {
+                _menuBar.Show();
+                WorkAreaHelper.TopReservedDip = MenuBarWindow.BarHeight;
+            }
+            else
+            {
+                _menuBar.Hide();
+                WorkAreaHelper.TopReservedDip = 0;
+            }
 
             // Re-assert notch topmost so it sits on top of the bar instead of under it
             if (_notchWindow?.IsVisible == true)
@@ -281,8 +283,9 @@ namespace WinDock.Views
         public void ApplyAppearance(DockSettings settings)
         {
             DockBar.CornerRadius = new CornerRadius(settings.BorderRadius);
-            double barHeight = settings.IconSize + 26;
+            double barHeight = settings.IconSize + 28;
             DockBar.Height = barHeight;
+            Height = barHeight;
 
             if (_dockManager != null)
             {
@@ -295,17 +298,7 @@ namespace WinDock.Views
             PositionAtBottomCenter();
 
             // Handle Reserve Screen Space accurately with DPI scaling
-            if (TaskbarController.IsTaskbarHidden)
-            {
-                if (settings.ReserveScreenSpace)
-                {
-                    WorkAreaHelper.SetReservedWorkArea(barHeight, marginDip: 8);
-                }
-                else
-                {
-                    WorkAreaHelper.SetFullScreenWorkArea();
-                }
-            }
+            UpdateWorkArea(settings);
 
             // Handle Auto-Hide dynamically
             if (settings.AutoHideDock)
@@ -321,9 +314,15 @@ namespace WinDock.Views
                 }
             }
 
-            // Launchpad & Trash tiles match app icon size, with the macOS squircle ratio
+            // Launchpad, Downloads & Trash tiles match app icon size, with the macOS squircle ratio
             LaunchpadTile.Width = LaunchpadTile.Height = settings.IconSize;
             LaunchpadTile.CornerRadius = new CornerRadius(settings.IconSize * 0.225);
+
+            if (DownloadsTile != null)
+            {
+                DownloadsTile.Width = DownloadsTile.Height = settings.IconSize;
+                DownloadsTile.CornerRadius = new CornerRadius(settings.IconSize * 0.225);
+            }
 
             if (TrashTile != null)
             {
@@ -339,7 +338,20 @@ namespace WinDock.Views
             }
 
             Color baseColor = ThemeHelper.ParseColor(tint, Color.FromRgb(75, 85, 99));
-            ThemeHelper.PaintDock(DockBar, baseColor, settings.GlassOpacity);
+            if (DockBar != null)
+            {
+                DockBar.CornerRadius = new CornerRadius(settings.BorderRadius);
+                ThemeHelper.PaintDock(DockBar, baseColor, settings.GlassOpacity, settings.BlurIntensity);
+            }
+
+            if (_hwnd != IntPtr.Zero)
+            {
+                ThemeHelper.ApplyWindowBlur(_hwnd, baseColor, settings.BlurIntensity);
+                if (DockBar != null)
+                {
+                    ThemeHelper.UpdateDockWindowRegion(_hwnd, DockBar, settings.BorderRadius);
+                }
+            }
 
             // Light glass needs dark glyphs and text, otherwise white-on-light is unreadable
             bool light = ThemeHelper.IsLight(baseColor) && settings.GlassOpacity >= 0.4;
@@ -354,10 +366,63 @@ namespace WinDock.Views
             double screenHeightDip = SystemParameters.PrimaryScreenHeight;
 
             double winWidth = ActualWidth > 0 ? ActualWidth : Width;
-            double winHeight = ActualHeight > 0 ? ActualHeight : 140;
+            double barHeight = (_settingsService?.CurrentSettings != null)
+                ? _settingsService.CurrentSettings.IconSize + 28
+                : (DockBar != null && DockBar.Height > 0 ? DockBar.Height : 80);
+
+            double bottomOffset = (!(_settingsService?.CurrentSettings?.HideWindowsTaskbar ?? true))
+                ? WorkAreaHelper.GetTaskbarHeightDip()
+                : 0;
 
             Left = (screenWidthDip - winWidth) / 2;
-            Top = screenHeightDip - winHeight - 8;
+            Top = screenHeightDip - barHeight - 8 - bottomOffset;
+
+            if (_hwnd != IntPtr.Zero && DockBar != null)
+            {
+                ThemeHelper.UpdateDockWindowRegion(_hwnd, DockBar, _settingsService?.CurrentSettings?.BorderRadius ?? 28);
+            }
+        }
+
+        private void UpdateWorkArea(DockSettings settings)
+        {
+            double barHeight = settings.IconSize + 28;
+
+            if (settings.HideWindowsTaskbar)
+            {
+                if (!TaskbarController.IsTaskbarHidden)
+                {
+                    TaskbarController.HideTaskbar();
+                }
+            }
+            else
+            {
+                if (TaskbarController.IsTaskbarHidden)
+                {
+                    TaskbarController.ShowTaskbar();
+                }
+            }
+
+            if (settings.ReserveScreenSpace)
+            {
+                // Dock is placed at Top = screenHeight - barHeight - 8.
+                // Reserving (barHeight + 8) causes maximized windows to stop flush against the top edge of WinDock.
+                double margin = 8;
+                WorkAreaHelper.SetReservedWorkArea(barHeight, marginDip: margin);
+                AppBarHelper.SetReservedSpace(barHeight, marginDip: margin);
+            }
+            else
+            {
+                AppBarHelper.ClearReservedSpace();
+
+                if (settings.HideWindowsTaskbar)
+                {
+                    WorkAreaHelper.SetFullScreenWorkArea();
+                }
+                else
+                {
+                    WorkAreaHelper.RestoreOriginalWorkArea();
+                }
+            }
         }
 
         #region Auto-Hide Logic
@@ -431,8 +496,60 @@ namespace WinDock.Views
 
         #region Dock Item Click & Magnification
 
+        private Point _dockDragStart;
+        private bool _isDraggingDockItem = false;
+
+        public void OnDockItemPreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                _dockDragStart = e.GetPosition(this);
+                _isDraggingDockItem = false;
+            }
+        }
+
+        public void OnDockItemPreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed && !_isDraggingDockItem && sender is FrameworkElement elem && elem.DataContext is DockItem item)
+            {
+                Point current = e.GetPosition(this);
+                Vector diff = _dockDragStart - current;
+                if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance || Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
+                {
+                    _isDraggingDockItem = true;
+                    HideMacTooltip();
+                    var data = new System.Windows.DataObject("WinDockItem", item);
+                    DragDrop.DoDragDrop(elem, data, DragDropEffects.Move);
+                    _isDraggingDockItem = false;
+                }
+            }
+        }
+
+        public void OnDockItemDragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent("WinDockItem"))
+            {
+                e.Effects = DragDropEffects.Move;
+                e.Handled = true;
+            }
+        }
+
+        public void OnDockItemDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent("WinDockItem") &&
+                e.Data.GetData("WinDockItem") is DockItem source &&
+                sender is FrameworkElement elem &&
+                elem.DataContext is DockItem target &&
+                source != target)
+            {
+                _dockManager?.ReorderItems(source, target);
+                e.Handled = true;
+            }
+        }
+
         private void OnItemClick(object sender, MouseButtonEventArgs e)
         {
+            if (_isDraggingDockItem) return;
             if (sender is FrameworkElement elem && elem.DataContext is DockItem item)
             {
                 _dockManager?.ExecuteItemClick(item);
@@ -494,6 +611,7 @@ namespace WinDock.Views
             Point mousePosInRoot = e.GetPosition(RootGrid);
 
             DockItem? closestItem = null;
+            FrameworkElement? closestContainer = null;
             double minDistance = double.MaxValue;
             Point closestItemPosInRoot = new Point(0, 0);
 
@@ -517,6 +635,7 @@ namespace WinDock.Views
                     {
                         minDistance = dist;
                         closestItem = item;
+                        closestContainer = container;
                         closestItemPosInRoot = itemPosInRoot;
                     }
 
@@ -532,49 +651,97 @@ namespace WinDock.Views
                 }
             }
 
-            // Smooth Mac Tooltip Bubble tracking
-            if (closestItem != null && minDistance < settings.IconSize * 1.5)
+            // Smooth Mac Tooltip Bubble tracking relative to DockBar
+            if (closestItem != null && minDistance < settings.IconSize * 0.7 && closestContainer != null)
             {
-                ShowMacTooltip(closestItem.Title, closestItemPosInRoot.X);
+                Point posInDock = closestContainer.TranslatePoint(new Point(closestContainer.ActualWidth / 2, 0), DockBar);
+                ShowMacTooltip(closestItem.Title, posInDock.X);
             }
-            else
+            else if (minDistance >= settings.IconSize * 0.9)
             {
                 HideMacTooltip();
             }
         }
 
-        private void ShowMacTooltip(string text, double centerXInRoot)
+        private void ShowMacTooltip(string text, double centerXInDock)
         {
-            if (MacTooltipBubble == null || MacTooltipText == null) return;
+            if (MacTooltipBubble == null || MacTooltipText == null || MacTooltipPopup == null) return;
 
             MacTooltipText.Text = text;
             MacTooltipBubble.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
             double bubbleWidth = MacTooltipBubble.DesiredSize.Width;
 
-            double left = Math.Max(0, centerXInRoot - (bubbleWidth / 2));
-            MacTooltipBubble.Margin = new Thickness(left, 0, 0, 6);
+            // Center bubble strictly above the hovered icon relative to DockBar
+            double dockWidth = DockBar.ActualWidth > 0 ? DockBar.ActualWidth : ActualWidth;
+            double left = Math.Clamp(centerXInDock - (bubbleWidth / 2), 4, Math.Max(4, dockWidth - bubbleWidth - 4));
 
-            if (MacTooltipBubble.Opacity < 0.95)
+            MacTooltipPopup.HorizontalOffset = left;
+            MacTooltipPopup.VerticalOffset = -6;
+
+            if (!MacTooltipPopup.IsOpen)
             {
-                var anim = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(100))
-                {
-                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                };
-                MacTooltipBubble.BeginAnimation(OpacityProperty, anim);
+                MacTooltipPopup.IsOpen = true;
+            }
+            else
+            {
+                // Force WPF Popup position recalculation during horizontal gliding
+                MacTooltipPopup.HorizontalOffset = left + 0.001;
+                MacTooltipPopup.HorizontalOffset = left;
             }
         }
 
         private void HideMacTooltip()
         {
-            if (MacTooltipBubble == null) return;
-            if (MacTooltipBubble.Opacity > 0.05)
+            if (MacTooltipPopup != null && MacTooltipPopup.IsOpen)
             {
-                var anim = new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(120))
-                {
-                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                };
-                MacTooltipBubble.BeginAnimation(OpacityProperty, anim);
+                MacTooltipPopup.IsOpen = false;
             }
+        }
+
+        private void OnDockItemMouseEnter(object sender, MouseEventArgs e)
+        {
+            if (sender is FrameworkElement elem && elem.DataContext is DockItem item)
+            {
+                Point centerInDock = elem.TranslatePoint(new Point(elem.ActualWidth / 2, 0), DockBar);
+                ShowMacTooltip(item.Title, centerInDock.X);
+            }
+        }
+
+        private void OnDockItemMouseLeave(object sender, MouseEventArgs e)
+        {
+            HideMacTooltip();
+        }
+
+        private void OnLaunchpadMouseEnter(object sender, MouseEventArgs e)
+        {
+            if (sender is FrameworkElement elem)
+            {
+                Point centerInDock = elem.TranslatePoint(new Point(elem.ActualWidth / 2, 0), DockBar);
+                ShowMacTooltip("Launchpad", centerInDock.X);
+            }
+        }
+
+        private void OnDownloadsMouseEnter(object sender, MouseEventArgs e)
+        {
+            if (sender is FrameworkElement elem)
+            {
+                Point centerInDock = elem.TranslatePoint(new Point(elem.ActualWidth / 2, 0), DockBar);
+                ShowMacTooltip("Downloads", centerInDock.X);
+            }
+        }
+
+        private void OnTrashMouseEnter(object sender, MouseEventArgs e)
+        {
+            if (sender is FrameworkElement elem)
+            {
+                Point centerInDock = elem.TranslatePoint(new Point(elem.ActualWidth / 2, 0), DockBar);
+                ShowMacTooltip("Recycle Bin", centerInDock.X);
+            }
+        }
+
+        private void OnSpecialTileMouseLeave(object sender, MouseEventArgs e)
+        {
+            HideMacTooltip();
         }
 
         #endregion
@@ -605,6 +772,134 @@ namespace WinDock.Views
                     _notchWindow.Show();
                     _notchWindow.PositionAtTopCenter();
                 }
+            }
+        }
+
+        private void OnDownloadsClicked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                if (System.IO.Directory.Exists(path))
+                {
+                    Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+                }
+            }
+            catch { }
+        }
+
+        private void OnDownloadsDragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effects = DragDropEffects.Copy;
+                if (DownloadsTile != null) DownloadsTile.Background = new SolidColorBrush(Color.FromArgb(0x4D, 0x3B, 0x82, 0xF6));
+                e.Handled = true;
+            }
+        }
+
+        private void OnDownloadsDragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effects = DragDropEffects.Copy;
+                e.Handled = true;
+            }
+        }
+
+        private void OnDownloadsDragLeave(object sender, DragEventArgs e)
+        {
+            if (DownloadsTile != null) DownloadsTile.Background = new SolidColorBrush(Color.FromArgb(0x1A, 255, 255, 255));
+        }
+
+        private void OnDownloadsDrop(object sender, DragEventArgs e)
+        {
+            if (DownloadsTile != null) DownloadsTile.Background = new SolidColorBrush(Color.FromArgb(0x1A, 255, 255, 255));
+            if (e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] files)
+            {
+                string targetDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                if (System.IO.Directory.Exists(targetDir))
+                {
+                    foreach (string file in files)
+                    {
+                        try
+                        {
+                            string dest = System.IO.Path.Combine(targetDir, System.IO.Path.GetFileName(file));
+                            if (System.IO.File.Exists(file)) System.IO.File.Copy(file, dest, true);
+                            else if (System.IO.Directory.Exists(file)) CopyDirectory(file, dest);
+                        }
+                        catch { }
+                    }
+                }
+                e.Handled = true;
+            }
+        }
+
+        private static void CopyDirectory(string sourceDir, string destDir)
+        {
+            System.IO.Directory.CreateDirectory(destDir);
+            foreach (var file in System.IO.Directory.GetFiles(sourceDir))
+            {
+                System.IO.File.Copy(file, System.IO.Path.Combine(destDir, System.IO.Path.GetFileName(file)), true);
+            }
+            foreach (var subDir in System.IO.Directory.GetDirectories(sourceDir))
+            {
+                CopyDirectory(subDir, System.IO.Path.Combine(destDir, System.IO.Path.GetFileName(subDir)));
+            }
+        }
+
+        private void OnTrashDragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effects = DragDropEffects.Move;
+                if (TrashTile != null) TrashTile.Background = new SolidColorBrush(Color.FromArgb(0x66, 0xEF, 0x44, 0x44));
+                e.Handled = true;
+            }
+        }
+
+        private void OnTrashDragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effects = DragDropEffects.Move;
+                e.Handled = true;
+            }
+        }
+
+        private void OnTrashDragLeave(object sender, DragEventArgs e)
+        {
+            if (TrashTile != null) TrashTile.Background = new SolidColorBrush(Color.FromArgb(0x1A, 255, 255, 255));
+        }
+
+        private void OnTrashDrop(object sender, DragEventArgs e)
+        {
+            if (TrashTile != null) TrashTile.Background = new SolidColorBrush(Color.FromArgb(0x1A, 255, 255, 255));
+            if (e.Data.GetDataPresent(DataFormats.FileDrop) && e.Data.GetData(DataFormats.FileDrop) is string[] files)
+            {
+                foreach (string file in files)
+                {
+                    MoveToRecycleBin(file);
+                }
+                e.Handled = true;
+            }
+        }
+
+        public static void MoveToRecycleBin(string path)
+        {
+            try
+            {
+                var shf = new NativeMethods.SHFILEOPSTRUCT
+                {
+                    wFunc = NativeMethods.FO_DELETE,
+                    pFrom = path + '\0' + '\0',
+                    fFlags = NativeMethods.FOF_ALLOWUNDO | NativeMethods.FOF_NOCONFIRMATION | NativeMethods.FOF_SILENT
+                };
+                NativeMethods.SHFileOperation(ref shf);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[RecycleBin] Error moving {path}: {ex.Message}");
             }
         }
 
@@ -714,6 +1009,7 @@ namespace WinDock.Views
         private void OnWindowClosed(object? sender, EventArgs e)
         {
             // CRITICAL SAFETY: Always restore Windows Taskbar & desktop WorkArea when WinDock exits
+            AppBarHelper.ClearReservedSpace();
             WorkAreaHelper.RestoreOriginalWorkArea();
             TaskbarController.ShowTaskbar();
 

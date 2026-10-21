@@ -13,6 +13,13 @@ namespace WinDock.Native
         private static NativeMethods.RECT _originalWorkArea;
         private static bool _hasSavedOriginal = false;
 
+        /// <summary>
+        /// Height (DIP) kept free at the top of the primary screen for the WinDock menu bar.
+        /// </summary>
+        public static double TopReservedDip { get; set; }
+
+        private static int TopReservedPx => (int)Math.Ceiling(TopReservedDip * GetDpiScale());
+
         public static void Initialize()
         {
             if (!_hasSavedOriginal)
@@ -54,7 +61,7 @@ namespace WinDock.Native
             var fullRect = new NativeMethods.RECT
             {
                 Left = screen.Bounds.Left,
-                Top = screen.Bounds.Top,
+                Top = screen.Bounds.Top + TopReservedPx,
                 Right = screen.Bounds.Right,
                 Bottom = screen.Bounds.Bottom
             };
@@ -81,7 +88,7 @@ namespace WinDock.Native
             var customRect = new NativeMethods.RECT
             {
                 Left = screen.Bounds.Left,
-                Top = screen.Bounds.Top,
+                Top = screen.Bounds.Top + TopReservedPx,
                 Right = screen.Bounds.Right,
                 Bottom = screen.Bounds.Bottom - physicalReservedHeight
             };

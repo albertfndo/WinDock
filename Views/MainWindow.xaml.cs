@@ -31,12 +31,12 @@ namespace WinDock.Views
         private NotchWindow? _notchWindow;
         private SpotlightWindow? _spotlightWindow;
         private AppListWindow? _appListWindow;
+        private MenuBarWindow? _menuBar;
         private WindowsKeyHook? _windowsKeyHook;
         private bool _isExplicitExit = false;
         private int _taskbarHotKeyId = -1;
         private int _spotlightHotKeyId = -1;
 
-        private DispatcherTimer? _clockTimer;
         private DispatcherTimer? _statusTimer;
         private DispatcherTimer? _autoHideTimer;
         private bool _isDockHidden = false;
@@ -86,6 +86,7 @@ namespace WinDock.Views
             // 3. Initialize Work Area Helper (prevents maximized windows from being cut off or overlapped)
             var settings = _settingsService.CurrentSettings;
             WorkAreaHelper.Initialize();
+            WorkAreaHelper.TopReservedDip = MenuBarWindow.BarHeight;
 
             // 4. Position Dock at Bottom-Center
             PositionAtBottomCenter();
@@ -122,6 +123,12 @@ namespace WinDock.Views
             _appListWindow.RequestPinToDock += path => _dockManager?.PinApplication(path);
             _appListWindow.RequestToggleNotch += ToggleNotch;
 
+            // 8b. macOS-style top menu bar (clock, network, volume, battery), shown while the taskbar is hidden
+            _menuBar = new MenuBarWindow();
+            _menuBar.RequestLaunchpad += () => _appListWindow?.Toggle();
+            _menuBar.RequestToggleNotch += ToggleNotch;
+            SyncMenuBar();
+
             // 9. Setup Global Hotkeys (Customizable via Preferences)
             try
             {
@@ -144,6 +151,7 @@ namespace WinDock.Views
                         {
                             WorkAreaHelper.RestoreOriginalWorkArea();
                         }
+                        SyncMenuBar();
                     }
                     else if (id == _spotlightHotKeyId)
                     {
@@ -171,20 +179,9 @@ namespace WinDock.Views
                 Debug.WriteLine($"[MainWindow] WindowsKeyHook init failed: {ex.Message}");
             }
 
-            // 10. Start Digital Clock Timer (Jam & Tanggal)
-            UpdateClock();
-            _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            _clockTimer.Tick += (s, ev) => UpdateClock();
-            _clockTimer.Start();
-
-            // 11. Start System Status Timer (Volume, Network & Running Windows sync)
-            UpdateSystemStatus();
+            // 11. Running windows sync (shell hook covers most changes; this catches the rest)
             _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-            _statusTimer.Tick += (s, ev) =>
-            {
-                UpdateSystemStatus();
-                _dockManager?.RefreshWindows();
-            };
+            _statusTimer.Tick += (s, ev) => _dockManager?.RefreshWindows();
             _statusTimer.Start();
 
             // 12. Initial Window Enumeration
@@ -244,10 +241,19 @@ namespace WinDock.Views
                 WorkAreaHelper.RestoreOriginalWorkArea();
             }
 
+            SyncMenuBar();
+
             if (settings.EnableDropNotch != (_notchWindow?.IsVisible == true))
             {
                 ToggleNotch();
             }
+        }
+
+        private void SyncMenuBar()
+        {
+            if (_menuBar == null) return;
+            if (TaskbarController.IsTaskbarHidden) _menuBar.Show();
+            else _menuBar.Hide();
         }
 
         private void RegisterHotKeys(DockSettings settings)
@@ -339,28 +345,6 @@ namespace WinDock.Views
 
             Left = (screenWidthDip - winWidth) / 2;
             Top = screenHeightDip - winHeight - 8;
-        }
-
-        private void UpdateClock()
-        {
-            ClockText.Text = DateTime.Now.ToString("HH:mm");
-            DateText.Text = DateTime.Now.ToString("ddd, MMM d");
-        }
-
-        private void UpdateSystemStatus()
-        {
-            // 1. Network Status
-            var (isConnected, isWifi, statusText) = NetworkHelper.GetStatus();
-            BtnNetwork.ToolTip = statusText + "\nClick to open Network Settings";
-            PathWifi.Visibility = (isConnected && isWifi) ? Visibility.Visible : Visibility.Collapsed;
-            PathEthernet.Visibility = (isConnected && !isWifi) ? Visibility.Visible : Visibility.Collapsed;
-            PathOffline.Visibility = !isConnected ? Visibility.Visible : Visibility.Collapsed;
-
-            // 2. Volume Status
-            var (vol, isMuted) = AudioHelper.GetMasterVolume();
-            BtnVolume.ToolTip = $"Volume: {vol}% {(isMuted ? "(Muted)" : "")}\nScroll wheel to adjust volume\nClick to mute/unmute";
-            PathVolumeNormal.Visibility = isMuted ? Visibility.Collapsed : Visibility.Visible;
-            PathVolumeMuted.Visibility = isMuted ? Visibility.Visible : Visibility.Collapsed;
         }
 
         #region Auto-Hide Logic
@@ -589,11 +573,6 @@ namespace WinDock.Views
             _appListWindow?.Toggle();
         }
 
-        private void OnToggleNotchClicked(object sender, RoutedEventArgs e)
-        {
-            ToggleNotch();
-        }
-
         public void ToggleNotch()
         {
             if (_notchWindow == null)
@@ -614,38 +593,6 @@ namespace WinDock.Views
                     _notchWindow.PositionAtTopCenter();
                 }
             }
-        }
-
-        private void OnNetworkClicked(object sender, RoutedEventArgs e)
-        {
-            NetworkHelper.OpenNetworkSettings();
-        }
-
-        private void OnVolumeClicked(object sender, RoutedEventArgs e)
-        {
-            AudioHelper.ToggleMute();
-            UpdateSystemStatus();
-        }
-
-        private void OnVolumeMouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            AudioHelper.VolumeStep(e.Delta > 0);
-            UpdateSystemStatus();
-            e.Handled = true;
-        }
-
-        private void OnClockClicked(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                Process.Start(new ProcessStartInfo { FileName = "ms-settings:dateandtime", UseShellExecute = true });
-            }
-            catch { }
-        }
-
-        private void OnShowDesktopClicked(object sender, RoutedEventArgs e)
-        {
-            WindowHelper.ToggleShowDesktop();
         }
 
         private void OnRecycleBinClicked(object sender, RoutedEventArgs e)
@@ -757,7 +704,6 @@ namespace WinDock.Views
             WorkAreaHelper.RestoreOriginalWorkArea();
             TaskbarController.ShowTaskbar();
 
-            _clockTimer?.Stop();
             _statusTimer?.Stop();
             _autoHideTimer?.Stop();
 
@@ -767,6 +713,7 @@ namespace WinDock.Views
             _notchWindow?.Close();
             _spotlightWindow?.Close();
             _appListWindow?.Close();
+            _menuBar?.Close();
         }
     }
 }

@@ -373,29 +373,6 @@ namespace WinDock.Native
         }
 
         /// <summary>
-        /// Toggles Show Desktop (minimizes/restores all windows like Win+D).
-        /// </summary>
-        public static void ToggleShowDesktop()
-        {
-            try
-            {
-                Type? shellType = Type.GetTypeFromProgID("Shell.Application");
-                if (shellType != null)
-                {
-                    dynamic? shell = Activator.CreateInstance(shellType);
-                    shell?.ToggleDesktop();
-                    return;
-                }
-            }
-            catch { }
-
-            NativeMethods.keybd_event(NativeMethods.VK_LWIN, 0, 0, 0);
-            NativeMethods.keybd_event(NativeMethods.VK_D, 0, 0, 0);
-            NativeMethods.keybd_event(NativeMethods.VK_D, 0, NativeMethods.KEYEVENTF_KEYUP, 0);
-            NativeMethods.keybd_event(NativeMethods.VK_LWIN, 0, NativeMethods.KEYEVENTF_KEYUP, 0);
-        }
-
-        /// <summary>
         /// Resolves shortcuts, system app filenames (explorer.exe, notepad.exe, wt.exe), and registry paths.
         /// </summary>
         public static string ResolveExecutablePath(string pathOrName)

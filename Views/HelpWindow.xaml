@@ -158,27 +158,27 @@
                     <Border Background="#162032" BorderBrush="#25FFFFFF" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,0,14">
                         <StackPanel>
                             <Grid Margin="0,4">
-                                <TextBlock Text="🔊 Volume Icon Scroll" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Menu bar: scroll on volume" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <TextBlock Text="Hover cursor and scroll wheel to step volume up / down" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
                             </Grid>
                             <Grid Margin="0,4">
-                                <TextBlock Text="🔇 Volume Icon Click" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <TextBlock Text="Click volume icon to toggle mute on / off" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                <TextBlock Text="Menu bar: Wi-Fi / volume / battery" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Open Control Center (Windows Quick Settings)" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
                             </Grid>
                             <Grid Margin="0,4">
-                                <TextBlock Text="🌐 Network Icon Click" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <TextBlock Text="Open Windows Network &amp; Wi-Fi Settings" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                <TextBlock Text="Menu bar: clock" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Open Notifications &amp; Calendar" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
                             </Grid>
                             <Grid Margin="0,4">
-                                <TextBlock Text="🕒 Digital Clock Click" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <TextBlock Text="Open Windows Date &amp; Time Settings" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                <TextBlock Text="Launchpad: type + Enter" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Launch the first matching app" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
                             </Grid>
                             <Grid Margin="0,4">
-                                <TextBlock Text="🖥 Show Desktop Click" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                <TextBlock Text="Minimize all open application windows" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                <TextBlock Text="Launchpad: scroll / PgUp / PgDn" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Switch pages" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
                             </Grid>
                             <Grid Margin="0,4">
-                                <TextBlock Text="🖱 App Right-Click" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Dock: right-click app" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <TextBlock Text="Bring to Front, Minimize, Close, or Pin/Unpin" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
                             </Grid>
                         </StackPanel>

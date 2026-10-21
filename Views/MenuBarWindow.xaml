@@ -1,0 +1,133 @@
+<Window x:Class="WinDock.Views.MenuBarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="WinDock Menu Bar"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        ShowActivated="False"
+        Height="28">
+
+    <Window.Resources>
+        <!-- Flat menu-bar item: highlight pill on hover, like macOS status items -->
+        <Style x:Key="BarItemStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="#F2FFFFFF" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Margin" Value="1,0" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" Background="Transparent" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#26FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#40FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BarGlyph" TargetType="Path">
+            <Setter Property="Fill" Value="#F2FFFFFF" />
+            <Setter Property="Width" Value="15" />
+            <Setter Property="Height" Value="15" />
+            <Setter Property="Stretch" Value="Uniform" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
+
+    <Border Background="#B8141418" BorderBrush="#1FFFFFFF" BorderThickness="0,0,0,1">
+        <Grid Margin="8,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Launchpad + frontmost app -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Style="{StaticResource BarItemStyle}" Click="OnLaunchpadClicked" ToolTip="Launchpad (Win)">
+                    <UniformGrid Rows="3" Columns="3" Width="13" Height="13">
+                        <Ellipse Width="3" Height="3" Fill="#F2FFFFFF" />
+                        <Ellipse Width="3" Height="3" Fill="#F2FFFFFF" />
+                        <Ellipse Width="3" Height="3" Fill="#F2FFFFFF" />
+                        <Ellipse Width="3" Height="3" Fill="#F2FFFFFF" />
+                        <Ellipse Width="3" Height="3" Fill="#F2FFFFFF" />
+                        <Ellipse Width="3" Height="3" Fill="#F2FFFFFF" />
+                        <Ellipse Width="3" Height="3" Fill="#F2FFFFFF" />
+                        <Ellipse Width="3" Height="3" Fill="#F2FFFFFF" />
+                        <Ellipse Width="3" Height="3" Fill="#F2FFFFFF" />
+                    </UniformGrid>
+                </Button>
+                <TextBlock x:Name="ActiveAppText" Text="Finder" Foreground="#FFFFFFFF" FontSize="13" FontWeight="Bold"
+                           VerticalAlignment="Center" Margin="8,0,0,0" MaxWidth="360" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+
+            <!-- Right: status items -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Style="{StaticResource BarItemStyle}" Click="OnNotchClicked" ToolTip="Show / Hide Drop Shelf">
+                    <Path Style="{StaticResource BarGlyph}" Data="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+                </Button>
+
+                <!-- Battery (hidden on desktops) -->
+                <Button x:Name="BatteryItem" Style="{StaticResource BarItemStyle}" Click="OnQuickSettingsClicked">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="BatteryText" Text="100%" FontSize="12" VerticalAlignment="Center" Margin="0,0,5,0"
+                                   Foreground="#F2FFFFFF" Typography.NumeralAlignment="Tabular" />
+                        <Grid VerticalAlignment="Center">
+                            <Border Width="23" Height="11" CornerRadius="3" BorderBrush="#B3FFFFFF" BorderThickness="1" Padding="1.5">
+                                <Border x:Name="BatteryFill" HorizontalAlignment="Left" Width="18" CornerRadius="1.5" Background="#F2FFFFFF" />
+                            </Border>
+                            <Border Width="2" Height="4" CornerRadius="0,1,1,0" Background="#B3FFFFFF" HorizontalAlignment="Right" Margin="0,0,-3,0" />
+                        </Grid>
+                        <Path x:Name="ChargingGlyph" Visibility="Collapsed" Style="{StaticResource BarGlyph}" Width="9" Height="11" Margin="4,0,0,0"
+                              Data="M7 2v11h3v9l7-12h-4l4-8z" />
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="NetworkItem" Style="{StaticResource BarItemStyle}" Click="OnQuickSettingsClicked">
+                    <Grid>
+                        <Path x:Name="PathWifi" Style="{StaticResource BarGlyph}"
+                              Data="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4l2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z" />
+                        <Path x:Name="PathEthernet" Style="{StaticResource BarGlyph}" Visibility="Collapsed"
+                              Data="M7.77 6.76L6.23 5.48.82 12l5.41 6.52 1.54-1.28L3.42 12l4.35-5.24zM7 13h2v-2H7v2zm10-2h-2v2h2v-2zm-6 2h2v-2h-2v2zm5.23-7.52l-1.54 1.28L19.04 12l-4.35 5.24 1.54 1.28L21.64 12l-5.41-6.52z" />
+                        <Path x:Name="PathOffline" Style="{StaticResource BarGlyph}" Visibility="Collapsed" Fill="#FF453A"
+                              Data="M23.64 7c-.45-.34-4.93-4-11.64-4-1.5 0-2.89.19-4.15.48L18.18 13.8 23.64 7zm-6.6 8.22L3.27 1.44 2 2.72l2.05 2.06C1.91 5.76.59 6.82.36 7l11.63 14.49.01.01.01-.01 3.9-4.86 3.32 3.32 1.27-1.27-3.46-3.46z" />
+                    </Grid>
+                </Button>
+
+                <Button x:Name="VolumeItem" Style="{StaticResource BarItemStyle}" Click="OnQuickSettingsClicked" MouseWheel="OnVolumeMouseWheel">
+                    <Grid>
+                        <Path x:Name="PathVolumeNormal" Style="{StaticResource BarGlyph}"
+                              Data="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+                        <Path x:Name="PathVolumeMuted" Style="{StaticResource BarGlyph}" Visibility="Collapsed"
+                              Data="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27l4.73 4.73H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+                    </Grid>
+                </Button>
+
+                <!-- Control Center (Windows Quick Settings) -->
+                <Button Style="{StaticResource BarItemStyle}" Click="OnQuickSettingsClicked" ToolTip="Control Center (Win+A)">
+                    <Path Style="{StaticResource BarGlyph}"
+                          Data="M7 6h10a6 6 0 0 1 0 12H7A6 6 0 0 1 7 6zm0 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" />
+                </Button>
+
+                <!-- Clock: opens Notification Center + calendar -->
+                <Button Style="{StaticResource BarItemStyle}" Click="OnClockClicked" ToolTip="Notifications &amp; Calendar (Win+N)">
+                    <TextBlock x:Name="ClockText" Text="Wed 21 Oct  14:05" FontSize="13" Foreground="#F2FFFFFF"
+                               Typography.NumeralAlignment="Tabular" />
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

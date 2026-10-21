@@ -4,8 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using Screen = System.Windows.Forms.Screen;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+using Microsoft.Win32;
 using WinDock.Models;
 using WinDock.Native;
 using WinDock.Services;
@@ -14,11 +18,19 @@ using MessageBox = System.Windows.MessageBox;
 
 namespace WinDock.Views
 {
+    /// <summary>
+    /// Full-screen macOS-style Launchpad: blurred wallpaper, paged app grid, search, power actions.
+    /// </summary>
     public partial class AppListWindow : Window
     {
+        private const double TileSize = 128;
+
         private readonly SpotlightService _spotlightService = SpotlightService.Instance;
         private DockManager? _dockManager;
         private List<SpotlightItem> _allApps = new();
+        private List<SpotlightItem> _filtered = new();
+        private int _page;
+        private int _pageSize = 35;
 
         public event Action<string>? RequestPinToDock;
         public event Action? RequestToggleNotch;
@@ -26,7 +38,7 @@ namespace WinDock.Views
         public AppListWindow()
         {
             InitializeComponent();
-            Loaded += OnLoaded;
+            Loaded += (s, e) => WindowHelper.HideFromAltTab(new System.Windows.Interop.WindowInteropHelper(this).Handle);
         }
 
         public void AttachDockManager(DockManager manager)
@@ -34,127 +46,211 @@ namespace WinDock.Views
             _dockManager = manager;
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
-            WindowHelper.HideFromAltTab(hwnd);
-
-            SetUserInfo();
-            LoadApplications();
-            PositionAboveDock();
-        }
-
-        private void SetUserInfo()
-        {
-            string username = Environment.UserName;
-            UserNameText.Text = username;
-            UserInitialText.Text = !string.IsNullOrEmpty(username) ? username.Substring(0, 1).ToUpper() : "U";
-        }
-
-        public void PositionAboveDock()
-        {
-            Screen primaryScreen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
-            var bounds = primaryScreen.Bounds;
-
-            Left = bounds.Left + (bounds.Width - Width) / 2;
-            Top = bounds.Bottom - Height - 85; // Float directly above the bottom dock
-        }
-
         public void LoadApplications()
         {
             _allApps = _spotlightService.GetAllIndexedApps();
-            AppsItemsControl.ItemsSource = _allApps;
+            ApplyFilter();
         }
 
         public void ShowAndFocus()
         {
-            PositionAboveDock();
+            Left = 0;
+            Top = 0;
+            Width = SystemParameters.PrimaryScreenWidth;
+            Height = SystemParameters.PrimaryScreenHeight;
+            LayoutGrid();
+            LoadWallpaper();
+
+            if (_allApps.Count == 0) LoadApplications();
+            SearchBox.Text = string.Empty; // also resets to page 1 via OnSearchTextChanged
+            _page = 0;
+            ShowPage();
+
             Show();
             Activate();
-            SearchBox.Text = string.Empty;
             SearchBox.Focus();
+            AnimateIn();
         }
 
         public void Toggle()
         {
-            if (IsVisible)
+            if (IsVisible) Hide();
+            else ShowAndFocus();
+        }
+
+        #region Layout, paging & search
+
+        private void LayoutGrid()
+        {
+            // Leave room for the search row on top and the page dots + dock at the bottom.
+            int cols = Math.Clamp((int)((Width - 160) / TileSize), 3, 8);
+            int rows = Math.Clamp((int)((Height - 300) / TileSize), 2, 5);
+            _pageSize = cols * rows;
+            AppsItemsControl.Width = cols * TileSize;
+        }
+
+        private int PageCount => Math.Max(1, (int)Math.Ceiling(_filtered.Count / (double)_pageSize));
+
+        private void ApplyFilter()
+        {
+            string query = SearchBox.Text.Trim();
+            _filtered = string.IsNullOrEmpty(query)
+                ? _allApps
+                : _allApps.Where(a => a.Title.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+            _page = 0;
+            ShowPage();
+        }
+
+        private void ShowPage()
+        {
+            _page = Math.Clamp(_page, 0, PageCount - 1);
+            AppsItemsControl.ItemsSource = _filtered.Skip(_page * _pageSize).Take(_pageSize).ToList();
+
+            bool empty = _filtered.Count == 0 && SearchBox.Text.Trim().Length > 0;
+            NoResultsText.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+            NoResultsText.Text = $"No apps match \"{SearchBox.Text.Trim()}\"";
+
+            PageDots.Children.Clear();
+            if (PageCount < 2) return;
+            for (int i = 0; i < PageCount; i++)
             {
-                Hide();
+                int target = i;
+                var dot = new Ellipse
+                {
+                    Width = 8,
+                    Height = 8,
+                    Margin = new Thickness(5, 0, 5, 0),
+                    Cursor = Cursors.Hand,
+                    Fill = new SolidColorBrush(i == _page ? Colors.White : Color.FromArgb(0x66, 255, 255, 255))
+                };
+                dot.MouseLeftButtonUp += (s, e) => { _page = target; ShowPage(); e.Handled = true; };
+                PageDots.Children.Add(dot);
             }
-            else
+        }
+
+        private void ChangePage(int delta)
+        {
+            int next = Math.Clamp(_page + delta, 0, PageCount - 1);
+            if (next == _page) return;
+            _page = next;
+            ShowPage();
+
+            // Short slide in the paging direction
+            var slide = new TranslateTransform(40 * delta, 0);
+            AppsItemsControl.RenderTransform = slide;
+            slide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(220))
             {
-                ShowAndFocus();
-            }
+                EasingFunction = new ExponentialEase { EasingMode = EasingMode.EaseOut, Exponent = 5 }
+            });
         }
 
         private void OnSearchTextChanged(object sender, TextChangedEventArgs e)
         {
-            string query = SearchBox.Text.Trim();
-            SearchPlaceholder.Visibility = string.IsNullOrEmpty(query) ? Visibility.Visible : Visibility.Collapsed;
+            SearchPlaceholder.Visibility = string.IsNullOrEmpty(SearchBox.Text) ? Visibility.Visible : Visibility.Collapsed;
+            ApplyFilter();
+        }
 
-            if (string.IsNullOrEmpty(query))
+        private void OnWindowMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            ChangePage(e.Delta < 0 ? 1 : -1);
+        }
+
+        #endregion
+
+        #region Look & motion
+
+        private void AnimateIn()
+        {
+            var ease = new ExponentialEase { EasingMode = EasingMode.EaseOut, Exponent = 6 };
+            var duration = TimeSpan.FromMilliseconds(240);
+
+            Backdrop.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
+            ContentRoot.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+            ContentScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.06, 1, duration) { EasingFunction = ease });
+            ContentScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.06, 1, duration) { EasingFunction = ease });
+        }
+
+        /// <summary>
+        /// Decodes the current wallpaper at low resolution; it is blurred anyway, so 480px is plenty and cheap.
+        /// </summary>
+        private void LoadWallpaper()
+        {
+            try
             {
-                AppsItemsControl.ItemsSource = _allApps;
+                string? path = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Desktop", "WallPaper", null) as string;
+                if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                {
+                    // Slideshow / Spotlight wallpapers only exist as the transcoded copy
+                    path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        @"Microsoft\Windows\Themes\TranscodedWallpaper");
+                }
+                if (!File.Exists(path))
+                {
+                    WallpaperImage.Source = null;
+                    return;
+                }
+
+                var bmp = new BitmapImage();
+                using (var stream = File.OpenRead(path))
+                {
+                    bmp.BeginInit();
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.DecodePixelWidth = 480;
+                    bmp.StreamSource = stream;
+                    bmp.EndInit();
+                }
+                bmp.Freeze();
+                WallpaperImage.Source = bmp;
             }
-            else
+            catch
             {
-                var filtered = _allApps
-                    .Where(a => a.Title.Contains(query, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-                AppsItemsControl.ItemsSource = filtered;
+                WallpaperImage.Source = null; // plain dark backdrop
             }
         }
 
-        private void OnAppClicked(object sender, MouseButtonEventArgs e)
+        #endregion
+
+        #region App tiles
+
+        private void Launch(SpotlightItem item)
         {
-            if (sender is FrameworkElement elem && elem.DataContext is SpotlightItem item)
-            {
-                Hide();
-                item.ExecuteAction?.Invoke();
-            }
+            Hide();
+            item.ExecuteAction?.Invoke();
+        }
+
+        private void OnAppClicked(object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement elem && elem.DataContext is SpotlightItem item) Launch(item);
         }
 
         private void OnAppRightClicked(object sender, MouseButtonEventArgs e)
         {
-            if (sender is FrameworkElement elem && elem.DataContext is SpotlightItem item)
+            if (sender is not FrameworkElement elem || elem.DataContext is not SpotlightItem item) return;
+
+            var menu = new ContextMenu();
+            var openItem = new MenuItem { Header = "Open" };
+            openItem.Click += (s, ev) => Launch(item);
+            menu.Items.Add(openItem);
+
+            if (!string.IsNullOrEmpty(item.LaunchPath))
             {
-                var menu = new System.Windows.Controls.ContextMenu();
-
-                var openItem = new System.Windows.Controls.MenuItem { Header = "Open Application" };
-                openItem.Click += (s, ev) =>
-                {
-                    Hide();
-                    item.ExecuteAction?.Invoke();
-                };
-                menu.Items.Add(openItem);
-
-                var pinItem = new System.Windows.Controls.MenuItem { Header = "📌 Pin to Dock" };
-                pinItem.Click += (s, ev) =>
-                {
-                    if (!string.IsNullOrEmpty(item.LaunchPath))
-                    {
-                        RequestPinToDock?.Invoke(item.LaunchPath);
-                    }
-                };
+                var pinItem = new MenuItem { Header = "Keep in Dock" };
+                pinItem.Click += (s, ev) => RequestPinToDock?.Invoke(item.LaunchPath);
                 menu.Items.Add(pinItem);
-
-                menu.IsOpen = true;
             }
+
+            menu.IsOpen = true;
+            e.Handled = true;
         }
 
-        #region Custom Actions & Power Controls
+        #endregion
+
+        #region Corner actions & power
 
         private void OnSettingsClicked(object sender, RoutedEventArgs e)
         {
             Hide();
-            var settingsWindow = new SettingsWindow();
-            settingsWindow.ShowDialog();
-        }
-
-        private void OnDesktopClicked(object sender, RoutedEventArgs e)
-        {
-            Hide();
-            WindowHelper.ToggleShowDesktop();
+            new SettingsWindow().ShowDialog();
         }
 
         private void OnNotchClicked(object sender, RoutedEventArgs e)
@@ -163,13 +259,18 @@ namespace WinDock.Views
             RequestToggleNotch?.Invoke();
         }
 
+        private void OnHelpClicked(object sender, RoutedEventArgs e)
+        {
+            Hide();
+            new HelpWindow().Show();
+        }
 
         private void OnPowerDropdownClicked(object sender, RoutedEventArgs e)
         {
-            if (sender is System.Windows.Controls.Button btn && btn.ContextMenu != null)
+            if (sender is Button btn && btn.ContextMenu != null)
             {
                 btn.ContextMenu.PlacementTarget = btn;
-                btn.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Top;
+                btn.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
                 btn.ContextMenu.IsOpen = true;
             }
         }
@@ -188,92 +289,78 @@ namespace WinDock.Views
 
         private void OnRestartClicked(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                "Are you sure you want to restart your computer?",
-                "Restart Computer",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                Hide();
+            if (Confirm("Restart your computer now? Unsaved work in open apps may be lost.", "Restart"))
                 TaskbarController.Restart();
-            }
         }
 
         private void OnShutdownClicked(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                "Are you sure you want to shut down your computer?",
-                "Shut Down Computer",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                Hide();
+            if (Confirm("Shut down your computer now? Unsaved work in open apps may be lost.", "Shut Down"))
                 TaskbarController.Shutdown();
-            }
         }
 
         private void OnExitWinDockClicked(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show(
-                "Are you sure you want to exit WinDock? The Windows taskbar will be restored.",
-                "Exit WinDock",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+            if (!Confirm("Quit WinDock? The Windows taskbar will be restored.", "Quit WinDock")) return;
 
-            if (result == MessageBoxResult.Yes)
-            {
-                Hide();
-                if (Application.Current.MainWindow is MainWindow mainWin)
-                {
-                    mainWin.ExitApplication();
-                }
-                else
-                {
-                    Application.Current.Shutdown();
-                }
-            }
+            if (Application.Current.MainWindow is MainWindow mainWin) mainWin.ExitApplication();
+            else Application.Current.Shutdown();
+        }
+
+        private bool Confirm(string message, string title)
+        {
+            Hide();
+            return MessageBox.Show(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
         }
 
         #endregion
 
-        private void OnCloseClicked(object sender, RoutedEventArgs e)
-        {
-            Hide();
-        }
-
-        private void OnHelpClicked(object sender, RoutedEventArgs e)
-        {
-            var help = new HelpWindow();
-            help.Show();
-        }
+        #region Keyboard & dismissal
 
         private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape)
+            bool inSearch = SearchBox.IsKeyboardFocusWithin;
+            bool searchEmpty = SearchBox.Text.Length == 0;
+
+            switch (e.Key)
             {
-                Hide();
-                e.Handled = true;
+                case Key.Escape:
+                    if (!searchEmpty) SearchBox.Text = string.Empty;
+                    else Hide();
+                    e.Handled = true;
+                    break;
+                case Key.Enter when inSearch:
+                    if (AppsItemsControl.ItemsSource is IEnumerable<SpotlightItem> visible && visible.FirstOrDefault() is SpotlightItem first)
+                        Launch(first);
+                    e.Handled = true;
+                    break;
+                case Key.PageDown:
+                case Key.Right when inSearch && searchEmpty:
+                    ChangePage(1);
+                    e.Handled = true;
+                    break;
+                case Key.PageUp:
+                case Key.Left when inSearch && searchEmpty:
+                    ChangePage(-1);
+                    e.Handled = true;
+                    break;
+                case Key.F1:
+                    OnHelpClicked(sender, e);
+                    e.Handled = true;
+                    break;
             }
-            else if (e.Key == Key.Enter && AppsItemsControl.ItemsSource is IEnumerable<SpotlightItem> visible && visible.FirstOrDefault() is SpotlightItem first)
-            {
-                Hide();
-                first.ExecuteAction?.Invoke();
-                e.Handled = true;
-            }
-            else if (e.Key == Key.F1)
-            {
-                OnHelpClicked(sender, e);
-                e.Handled = true;
-            }
+        }
+
+        private void OnBackdropClicked(object sender, MouseButtonEventArgs e)
+        {
+            Hide();
         }
 
         private void OnWindowDeactivated(object? sender, EventArgs e)
         {
             Hide();
         }
+
+        #endregion
     }
 }

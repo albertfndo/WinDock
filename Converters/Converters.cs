@@ -99,4 +99,23 @@ namespace WinDock.Converters
             throw new NotImplementedException();
         }
     }
+
+    /// <summary>
+    /// "Visual Studio" -> "V". Monogram for apps without an icon.
+    /// </summary>
+    public class FirstLetterConverter : IValueConverter
+    {
+        public static readonly FirstLetterConverter Instance = new();
+
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            string s = (value as string)?.Trim() ?? string.Empty;
+            return s.Length > 0 ? s.Substring(0, 1).ToUpper(culture) : "?";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

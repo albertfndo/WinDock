@@ -5,48 +5,44 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:conv="clr-namespace:WinDock.Converters"
         mc:Ignorable="d"
-        Title="WinDock App Launcher &amp; Power Menu"
+        Title="WinDock Launchpad"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
-        Width="700"
-        Height="540"
         PreviewKeyDown="OnWindowPreviewKeyDown"
+        MouseWheel="OnWindowMouseWheel"
         Deactivated="OnWindowDeactivated">
 
     <Window.Resources>
         <conv:NullToVisibilityConverter x:Key="NullToVis" />
 
-        <!-- Power Action Button Style -->
-        <Style x:Key="PowerButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#20FFFFFF" />
-            <Setter Property="Foreground" Value="#F1F5F9" />
-            <Setter Property="BorderBrush" Value="#25FFFFFF" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="FontSize" Value="11.5" />
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Padding" Value="12,6" />
+        <!-- App tile: a real Button so Tab/Enter work, macOS Launchpad proportions -->
+        <Style x:Key="AppTileStyle" TargetType="Button">
+            <Setter Property="Width" Value="128" />
+            <Setter Property="Height" Value="128" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="pBorder"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
+                        <Grid Background="Transparent" RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform x:Name="tileScale" />
+                            </Grid.RenderTransform>
+                            <Border x:Name="focusRing" CornerRadius="22" Margin="14,2,14,26"
+                                    BorderBrush="#CCFFFFFF" BorderThickness="0" />
+                            <ContentPresenter />
+                        </Grid>
                         <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="pBorder" Property="Background" Value="#35FFFFFF" />
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="focusRing" Property="BorderThickness" Value="2" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="pBorder" Property="Background" Value="#50FFFFFF" />
+                                <Setter TargetName="tileScale" Property="ScaleX" Value="0.92" />
+                                <Setter TargetName="tileScale" Property="ScaleY" Value="0.92" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -54,23 +50,54 @@
             </Setter>
         </Style>
 
-        <!-- Dark Glass Power Context Menu Style -->
+        <!-- Round glass icon button for the corner actions -->
+        <Style x:Key="CornerButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="40" />
+            <Setter Property="Height" Value="40" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg" CornerRadius="20" Background="#26FFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#40FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="bg" Property="BorderBrush" Value="#CCFFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CornerGlyph" TargetType="Path">
+            <Setter Property="Fill" Value="#F2FFFFFF" />
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Stretch" Value="Uniform" />
+        </Style>
+
+        <Style x:Key="MenuGlyph" TargetType="Path">
+            <Setter Property="Fill" Value="#E6FFFFFF" />
+            <Setter Property="Width" Value="14" />
+            <Setter Property="Height" Value="14" />
+            <Setter Property="Stretch" Value="Uniform" />
+        </Style>
+
+        <!-- Power menu: dark glass -->
         <Style x:Key="PowerContextMenuStyle" TargetType="ContextMenu">
-            <Setter Property="Background" Value="#F81E293B" />
-            <Setter Property="BorderBrush" Value="#40FFFFFF" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Foreground" Value="#F1F5F9" />
-            <Setter Property="Padding" Value="5" />
+            <Setter Property="Foreground" Value="#F5FFFFFF" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ContextMenu">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="12"
-                                Padding="{TemplateBinding Padding}">
+                        <Border Background="#F2202024" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Padding="5">
                             <Border.Effect>
-                                <DropShadowEffect BlurRadius="24" Color="#000000" Opacity="0.75" Direction="270" ShadowDepth="4" />
+                                <DropShadowEffect BlurRadius="24" Color="#000000" Opacity="0.5" Direction="270" ShadowDepth="6" />
                             </Border.Effect>
                             <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
                         </Border>
@@ -80,31 +107,26 @@
         </Style>
 
         <Style x:Key="PowerMenuItemStyle" TargetType="MenuItem">
-            <Setter Property="Foreground" Value="#F1F5F9" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="FontWeight" Value="Medium" />
-            <Setter Property="Padding" Value="10,6" />
-            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="#F5FFFFFF" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="MinWidth" Value="180" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="MenuItem">
-                        <Border x:Name="mBorder"
-                                Background="Transparent"
-                                CornerRadius="8"
-                                Padding="{TemplateBinding Padding}"
-                                Margin="2,1">
+                        <Border x:Name="mBorder" Background="Transparent" CornerRadius="7" Padding="{TemplateBinding Padding}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="24" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <ContentPresenter Grid.Column="0" ContentSource="Icon" VerticalAlignment="Center" HorizontalAlignment="Left" />
-                                <ContentPresenter Grid.Column="1" ContentSource="Header" VerticalAlignment="Center" Margin="6,0,0,0" />
+                                <ContentPresenter ContentSource="Icon" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                                <ContentPresenter Grid.Column="1" ContentSource="Header" VerticalAlignment="Center" />
                             </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="mBorder" Property="Background" Value="#2563EB" />
+                                <Setter TargetName="mBorder" Property="Background" Value="#0A84FF" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -113,280 +135,157 @@
         </Style>
 
         <Style x:Key="PowerMenuSeparatorStyle" TargetType="Separator">
-            <Setter Property="Background" Value="#25FFFFFF" />
-            <Setter Property="Margin" Value="6,4" />
-            <Setter Property="Height" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Rectangle Height="1" Fill="#26FFFFFF" Margin="8,4" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
-    <!-- Main Container -->
-    <Border CornerRadius="20" Padding="20,16">
-        <Border.Background>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#F00F172A" Offset="0.0" />
-                <GradientStop Color="#F8080C16" Offset="1.0" />
-            </LinearGradientBrush>
-        </Border.Background>
-        <Border.BorderBrush>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#45FFFFFF" Offset="0.0" />
-                <GradientStop Color="#18FFFFFF" Offset="1.0" />
-            </LinearGradientBrush>
-        </Border.BorderBrush>
-        <Border.BorderThickness>1</Border.BorderThickness>
+    <Grid>
+        <!-- Backdrop: blurred wallpaper, dimmed (macOS Launchpad). Click empty space to close. -->
+        <Grid x:Name="Backdrop" ClipToBounds="True" MouseLeftButtonUp="OnBackdropClicked" Background="#0B0B10">
+            <Image x:Name="WallpaperImage" Stretch="UniformToFill" Margin="-60">
+                <Image.Effect>
+                    <BlurEffect Radius="60" KernelType="Gaussian" RenderingBias="Performance" />
+                </Image.Effect>
+            </Image>
+            <Rectangle Fill="#73000000" />
+        </Grid>
 
-        <Border.Effect>
-            <DropShadowEffect BlurRadius="42" ShadowDepth="10" Direction="270" Color="#000000" Opacity="0.7" />
-        </Border.Effect>
-
-        <Grid>
+        <!-- Content, animated in on open -->
+        <Grid x:Name="ContentRoot" RenderTransformOrigin="0.5,0.5">
+            <Grid.RenderTransform>
+                <ScaleTransform x:Name="ContentScale" />
+            </Grid.RenderTransform>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="1" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- 1. Top Header: User Profile & Search Box -->
-            <Grid Grid.Row="0" Margin="0,0,0,14">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+            <!-- Search field, centered -->
+            <Border Grid.Row="0" Width="260" Height="34" Margin="0,48,0,0"
+                    HorizontalAlignment="Center" CornerRadius="9"
+                    Background="#33FFFFFF" BorderBrush="#40FFFFFF" BorderThickness="1">
+                <Grid Margin="10,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Path Data="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                          Fill="#CCFFFFFF" Width="14" Height="14" Stretch="Uniform" Margin="0,0,8,0" VerticalAlignment="Center" />
+                    <TextBox x:Name="SearchBox" Grid.Column="1"
+                             Background="Transparent" BorderThickness="0"
+                             Foreground="#FFFFFF" CaretBrush="#FFFFFF" SelectionBrush="#0A84FF"
+                             FontSize="14" VerticalAlignment="Center"
+                             TextChanged="OnSearchTextChanged" />
+                    <TextBlock x:Name="SearchPlaceholder" Grid.Column="1" Text="Search"
+                               Foreground="#B3FFFFFF" FontSize="14" IsHitTestVisible="False" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
 
-                <!-- User Profile Info -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                    <Border Width="36" Height="36" CornerRadius="18" Margin="0,0,10,0">
-                        <Border.Background>
-                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                <GradientStop Color="#3B82F6" Offset="0.0" />
-                                <GradientStop Color="#8B5CF6" Offset="1.0" />
-                            </LinearGradientBrush>
-                        </Border.Background>
-                        <TextBlock x:Name="UserInitialText" Text="U" Foreground="White" FontSize="14" FontWeight="Bold"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock x:Name="UserNameText" Text="User" Foreground="#F8FAFC" FontSize="13.5" FontWeight="SemiBold"
-                                   FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
-                        <TextBlock Text="WinDock Launchpad" Foreground="#94A3B8" FontSize="10.5" />
-                    </StackPanel>
-                </StackPanel>
+            <!-- Corner actions -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,44,40,0">
+                <Button Style="{StaticResource CornerButtonStyle}" Click="OnSettingsClicked" ToolTip="WinDock Settings">
+                    <Path Style="{StaticResource CornerGlyph}" Data="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                </Button>
+                <Button Style="{StaticResource CornerButtonStyle}" Click="OnNotchClicked" ToolTip="Show / Hide Drop Shelf">
+                    <Path Style="{StaticResource CornerGlyph}" Data="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+                </Button>
+                <Button Style="{StaticResource CornerButtonStyle}" Click="OnHelpClicked" ToolTip="Shortcuts (F1)">
+                    <Path Style="{StaticResource CornerGlyph}" Data="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z" />
+                </Button>
+                <Button x:Name="BtnPower" Style="{StaticResource CornerButtonStyle}" Click="OnPowerDropdownClicked" ToolTip="Lock, Sleep, Restart, Shut Down">
+                    <Path Style="{StaticResource CornerGlyph}" Data="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42A6.92 6.92 0 0 1 19 12c0 3.87-3.13 7-7 7A6.995 6.995 0 0 1 7.58 6.58L6.17 5.17A8.932 8.932 0 0 0 3 12a9 9 0 0 0 18 0c0-2.74-1.23-5.18-3.17-6.83z" />
+                    <Button.ContextMenu>
+                        <ContextMenu Style="{StaticResource PowerContextMenuStyle}">
+                            <MenuItem Header="Lock" Click="OnLockClicked" Style="{StaticResource PowerMenuItemStyle}">
+                                <MenuItem.Icon>
+                                    <Path Style="{StaticResource MenuGlyph}" Data="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Sleep" Click="OnSleepClicked" Style="{StaticResource PowerMenuItemStyle}">
+                                <MenuItem.Icon>
+                                    <Path Style="{StaticResource MenuGlyph}" Data="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Restart…" Click="OnRestartClicked" Style="{StaticResource PowerMenuItemStyle}">
+                                <MenuItem.Icon>
+                                    <Path Style="{StaticResource MenuGlyph}" Data="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Shut Down…" Click="OnShutdownClicked" Style="{StaticResource PowerMenuItemStyle}">
+                                <MenuItem.Icon>
+                                    <Path Style="{StaticResource MenuGlyph}" Data="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42A6.92 6.92 0 0 1 19 12c0 3.87-3.13 7-7 7A6.995 6.995 0 0 1 7.58 6.58L6.17 5.17A8.932 8.932 0 0 0 3 12a9 9 0 0 0 18 0c0-2.74-1.23-5.18-3.17-6.83z" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <Separator Style="{StaticResource PowerMenuSeparatorStyle}" />
+                            <MenuItem Header="Quit WinDock" Click="OnExitWinDockClicked" Style="{StaticResource PowerMenuItemStyle}">
+                                <MenuItem.Icon>
+                                    <Path Style="{StaticResource MenuGlyph}" Data="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5a2 2 0 0 0-2 2v4h2V5h14v14H5v-4H3v4a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+            </StackPanel>
 
-                <!-- Search Input Box -->
-                <Border Grid.Column="1"
-                        Background="#1E293B"
-                        BorderBrush="#334155"
-                        BorderThickness="1"
-                        CornerRadius="12"
-                        Padding="12,6"
-                        Margin="0,0,12,0">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Column="0" Text="🔍" FontSize="12" Foreground="#94A3B8" Margin="0,0,8,0" VerticalAlignment="Center" />
-
-                        <TextBox x:Name="SearchBox"
-                                 Grid.Column="1"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 Foreground="#F8FAFC"
-                                 CaretBrush="#38BDF8"
-                                 FontSize="13"
-                                 VerticalAlignment="Center"
-                                 TextChanged="OnSearchTextChanged" />
-
-                        <TextBlock x:Name="SearchPlaceholder"
-                                   Grid.Column="1"
-                                   Text="Type to search apps..."
-                                   Foreground="#64748B"
-                                   FontSize="13"
-                                   IsHitTestVisible="False"
-                                   VerticalAlignment="Center" />
-                    </Grid>
-                </Border>
-
-                <!-- Close Button -->
-                <Button Grid.Column="2"
-                        Content="✕"
-                        Click="OnCloseClicked"
-                        Background="Transparent"
-                        Foreground="#94A3B8"
-                        BorderThickness="0"
-                        FontSize="15"
-                        Cursor="Hand"
-                        VerticalAlignment="Center" />
-            </Grid>
-
-            <!-- 2. Application Grid Area -->
-            <ScrollViewer Grid.Row="1"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled"
-                          Margin="0,0,0,12">
-                <ItemsControl x:Name="AppsItemsControl">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <!-- App Tile -->
-                            <Border Width="104" Height="92" Margin="4,4"
-                                    Background="Transparent"
-                                    CornerRadius="14"
-                                    Padding="6,8"
-                                    Cursor="Hand"
-                                    MouseLeftButtonUp="OnAppClicked"
-                                    MouseRightButtonUp="OnAppRightClicked">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#25FFFFFF" />
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="*" />
-                                    </Grid.RowDefinitions>
-
-                                    <!-- App Icon -->
-                                    <Grid Grid.Row="0" Width="44" Height="44" HorizontalAlignment="Center">
-                                        <Image Source="{Binding Icon}"
-                                               Visibility="{Binding Icon, Converter={StaticResource NullToVis}}"
-                                               Width="40" Height="40"
-                                               RenderOptions.BitmapScalingMode="HighQuality" />
-
-                                        <!-- Fallback placeholder -->
-                                        <Border Visibility="{Binding Icon, Converter={StaticResource NullToVis}, ConverterParameter=invert}"
-                                                Background="#2563EB" CornerRadius="10">
-                                            <TextBlock Text="⚡" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        </Border>
-                                    </Grid>
-
-                                    <!-- App Title -->
-                                    <TextBlock Grid.Row="1"
-                                               Text="{Binding Title}"
-                                               Foreground="#F1F5F9"
-                                               FontSize="11"
-                                               FontWeight="SemiBold"
-                                               TextAlignment="Center"
-                                               TextTrimming="CharacterEllipsis"
-                                               Margin="0,4,0,0" />
+            <!-- App grid (one page at a time) -->
+            <ItemsControl x:Name="AppsItemsControl" Grid.Row="1"
+                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                          KeyboardNavigation.TabNavigation="Cycle">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource AppTileStyle}"
+                                Click="OnAppClicked"
+                                MouseRightButtonUp="OnAppRightClicked"
+                                ToolTip="{Binding Title}">
+                            <StackPanel VerticalAlignment="Top" Margin="0,6,0,0">
+                                <Grid Width="80" Height="80" HorizontalAlignment="Center">
+                                    <Image Source="{Binding Icon}"
+                                           Visibility="{Binding Icon, Converter={StaticResource NullToVis}}"
+                                           RenderOptions.BitmapScalingMode="HighQuality">
+                                        <Image.Effect>
+                                            <DropShadowEffect BlurRadius="10" ShadowDepth="3" Direction="270" Color="#000000" Opacity="0.3" />
+                                        </Image.Effect>
+                                    </Image>
+                                    <!-- No icon: monogram tile -->
+                                    <Border Visibility="{Binding Icon, Converter={StaticResource NullToVis}, ConverterParameter=invert}"
+                                            CornerRadius="18" Background="#3A3A44">
+                                        <TextBlock Text="{Binding Title, Converter={x:Static conv:FirstLetterConverter.Instance}}"
+                                                   Foreground="#FFFFFF" FontSize="32" FontWeight="SemiBold"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
                                 </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+                                <TextBlock Text="{Binding Title}"
+                                           Foreground="#FFFFFF" FontSize="12.5"
+                                           TextAlignment="Center" TextTrimming="CharacterEllipsis"
+                                           MaxWidth="116" Margin="0,8,0,0">
+                                    <TextBlock.Effect>
+                                        <DropShadowEffect BlurRadius="4" ShadowDepth="1" Direction="270" Color="#000000" Opacity="0.6" />
+                                    </TextBlock.Effect>
+                                </TextBlock>
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
-            <!-- Separator -->
-            <Rectangle Grid.Row="2" Fill="#20FFFFFF" Height="1" Margin="0,0,0,12" />
+            <!-- Empty search result -->
+            <TextBlock x:Name="NoResultsText" Grid.Row="1" Visibility="Collapsed"
+                       Foreground="#CCFFFFFF" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
 
-            <!-- 3. Bottom Action Bar (Settings, Desktop, Power) -->
-            <Grid Grid.Row="3">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <!-- Left Quick Actions: Settings & Desktop -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Style="{StaticResource PowerButtonStyle}"
-                            Click="OnSettingsClicked"
-                            ToolTip="Open WinDock Settings"
-                            Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⚙" FontSize="12" Margin="0,0,5,0" />
-                            <TextBlock Text="Settings" />
-                        </StackPanel>
-                    </Button>
-                    <Button Style="{StaticResource PowerButtonStyle}"
-                            Click="OnDesktopClicked"
-                            ToolTip="Show Desktop (Kembali ke Desktop)"
-                            Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🖥" FontSize="11" Margin="0,0,5,0" />
-                            <TextBlock Text="Desktop" />
-                        </StackPanel>
-                    </Button>
-                    <Button Style="{StaticResource PowerButtonStyle}"
-                            Click="OnNotchClicked"
-                            ToolTip="Toggle Dynamic Drop Notch Shelf"
-                            Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="☁" FontSize="11" Margin="0,0,5,0" />
-                            <TextBlock Text="Notch" />
-                        </StackPanel>
-                    </Button>
-                    <Button Style="{StaticResource PowerButtonStyle}"
-                            Click="OnHelpClicked"
-                            ToolTip="Shortcuts &amp; Gestures Guide (F1)"
-                            Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="❓" FontSize="11" Margin="0,0,5,0" />
-                            <TextBlock Text="Help" />
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-
-                <!-- Right: Unified Power Dropdown Button (Sleep, Lock, Restart, Shut Down) -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button x:Name="BtnPowerDropdown"
-                            Style="{StaticResource PowerButtonStyle}"
-                            Click="OnPowerDropdownClicked"
-                            ToolTip="Power Options (Sleep, Lock, Restart, Shut Down)"
-                            Padding="12,6">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="⏻" FontSize="12.5" Foreground="#F87171" Margin="0,0,6,0" VerticalAlignment="Center" />
-                            <TextBlock Text="Power" FontWeight="SemiBold" VerticalAlignment="Center" />
-                            <TextBlock Text=" ▴" FontSize="8.5" Foreground="#94A3B8" Margin="4,0,0,0" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <Button.ContextMenu>
-                            <ContextMenu x:Name="PowerContextMenu"
-                                         Style="{StaticResource PowerContextMenuStyle}"
-                                         Placement="Top">
-                                <MenuItem Header="Lock Screen" Click="OnLockClicked" Style="{StaticResource PowerMenuItemStyle}">
-                                    <MenuItem.Icon>
-                                        <TextBlock Text="🔒" FontSize="13" VerticalAlignment="Center" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <MenuItem Header="Sleep" Click="OnSleepClicked" Style="{StaticResource PowerMenuItemStyle}">
-                                    <MenuItem.Icon>
-                                        <TextBlock Text="🌙" FontSize="13" VerticalAlignment="Center" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <MenuItem Header="Restart..." Click="OnRestartClicked" Style="{StaticResource PowerMenuItemStyle}">
-                                    <MenuItem.Icon>
-                                        <TextBlock Text="🔄" FontSize="13" VerticalAlignment="Center" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <Separator Style="{StaticResource PowerMenuSeparatorStyle}" />
-                                <MenuItem Header="Shut Down..." Click="OnShutdownClicked" Style="{StaticResource PowerMenuItemStyle}" Foreground="#FCA5A5">
-                                    <MenuItem.Icon>
-                                        <TextBlock Text="⏻" FontSize="13" Foreground="#EF4444" FontWeight="Bold" VerticalAlignment="Center" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <Separator Style="{StaticResource PowerMenuSeparatorStyle}" />
-                                <MenuItem Header="Exit WinDock" Click="OnExitWinDockClicked" Style="{StaticResource PowerMenuItemStyle}">
-                                    <MenuItem.Icon>
-                                        <TextBlock Text="✕" FontSize="11" Foreground="#94A3B8" FontWeight="Bold" VerticalAlignment="Center" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                            </ContextMenu>
-                        </Button.ContextMenu>
-                    </Button>
-                </StackPanel>
-            </Grid>
+            <!-- Page dots; leaves room for the dock below -->
+            <StackPanel x:Name="PageDots" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,130" />
         </Grid>
-    </Border>
+    </Grid>
 </Window>

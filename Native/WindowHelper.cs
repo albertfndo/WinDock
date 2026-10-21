@@ -379,17 +379,21 @@ namespace WinDock.Native
         {
             if (string.IsNullOrWhiteSpace(pathOrName)) return string.Empty;
 
+            // Resolve shortcut (.lnk) FIRST before checking File.Exists,
+            // because .lnk files exist on disk, but we need their target executable!
+            if (pathOrName.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+            {
+                string resolved = ShortcutHelper.ResolveShortcut(pathOrName);
+                if (!string.IsNullOrWhiteSpace(resolved) && (File.Exists(resolved) || Directory.Exists(resolved)))
+                {
+                    return Path.GetFullPath(resolved);
+                }
+            }
+
             // Direct file or folder exists
             if (File.Exists(pathOrName) || Directory.Exists(pathOrName))
             {
                 return Path.GetFullPath(pathOrName);
-            }
-
-            // Resolve shortcut (.lnk)
-            if (pathOrName.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
-            {
-                string resolved = ShortcutHelper.ResolveShortcut(pathOrName);
-                if (File.Exists(resolved) || Directory.Exists(resolved)) return resolved;
             }
 
             string nameOnly = Path.GetFileName(pathOrName);
@@ -441,17 +445,15 @@ namespace WinDock.Native
 
         /// <summary>
         /// Extracts the highest resolution (256x256 Jumbo) icon available for a window handle, path, or title.
-        /// </summary>
-        /// <summary>
-        /// Extracts the highest resolution (256x256 Jumbo) icon available for a window handle, path, or title.
-        /// Fully supports UWP Store apps (WhatsApp, Settings), Shell Jumbo icons, and modern vector branding.
+        /// Fully supports UWP Store apps (WhatsApp, Settings), Shell Jumbo icons, IShellItemImageFactory,
+        /// PrivateExtractIcons (256px), and modern vector branding.
         /// </summary>
         public static ImageSource GetWindowIcon(IntPtr hWnd, string? rawPath = null, string? title = null)
         {
             string? targetPath = !string.IsNullOrEmpty(rawPath) ? ResolveExecutablePath(rawPath) : null;
-            string cacheKey = !string.IsNullOrEmpty(targetPath)
-                ? targetPath
-                : (!string.IsNullOrEmpty(title) ? title : (hWnd != IntPtr.Zero ? $"HWND_{hWnd}" : "App"));
+            string cacheKey = !string.IsNullOrEmpty(rawPath)
+                ? rawPath
+                : (!string.IsNullOrEmpty(targetPath) ? targetPath : (!string.IsNullOrEmpty(title) ? title : (hWnd != IntPtr.Zero ? $"HWND_{hWnd}" : "App")));
 
             if (_iconCache.TryGetValue(cacheKey, out var cached))
             {
@@ -459,6 +461,7 @@ namespace WinDock.Native
             }
 
             ImageSource? result = null;
+            BitmapSource? fallbackLowRes = null;
 
             bool isWhatsApp = (!string.IsNullOrEmpty(targetPath) && targetPath.Contains("whatsapp", StringComparison.OrdinalIgnoreCase)) ||
                               (!string.IsNullOrEmpty(title) && title.Contains("whatsapp", StringComparison.OrdinalIgnoreCase)) ||
@@ -468,48 +471,121 @@ namespace WinDock.Native
                               (!string.IsNullOrEmpty(title) && title.Equals("Settings", StringComparison.OrdinalIgnoreCase)) ||
                               (!string.IsNullOrEmpty(rawPath) && rawPath.Contains("ms-settings", StringComparison.OrdinalIgnoreCase));
 
-            // 1. Try Store App package assets if path points to WindowsApps
-            if (!string.IsNullOrEmpty(targetPath) && targetPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase))
+            // 1. High-resolution branded vector icons
+            if (isWhatsApp)
+            {
+                result = CreateWhatsAppVectorIcon();
+                _iconCache[cacheKey] = result;
+                return result;
+            }
+            if (isSettings)
+            {
+                result = CreateSettingsVectorIcon();
+                _iconCache[cacheKey] = result;
+                return result;
+            }
+
+            // 2. If rawPath was a shortcut (.lnk), check for custom icon location specified in shortcut
+            if (!string.IsNullOrEmpty(rawPath) && rawPath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+            {
+                var (_, iconLocation, iconIndex) = ShortcutHelper.ResolveShortcutDetails(rawPath);
+                if (!string.IsNullOrEmpty(iconLocation) && File.Exists(iconLocation))
+                {
+                    var customIcon = ExtractPrivateIcon(iconLocation, 256, iconIndex);
+                    if (customIcon != null && customIcon.PixelWidth >= 48)
+                    {
+                        result = customIcon;
+                    }
+                    else if (customIcon != null && fallbackLowRes == null)
+                    {
+                        fallbackLowRes = customIcon;
+                    }
+                }
+            }
+
+            // 3. Try PrivateExtractIcons on targetPath (256x256) directly from EXE/ICO
+            if (result == null && !string.IsNullOrEmpty(targetPath) && File.Exists(targetPath))
+            {
+                string ext = Path.GetExtension(targetPath);
+                if (ext.Equals(".exe", StringComparison.OrdinalIgnoreCase) || ext.Equals(".ico", StringComparison.OrdinalIgnoreCase))
+                {
+                    var privateIcon = ExtractPrivateIcon(targetPath, 256, 0);
+                    if (privateIcon != null && privateIcon.PixelWidth >= 48)
+                    {
+                        result = privateIcon;
+                    }
+                    else if (privateIcon != null && fallbackLowRes == null)
+                    {
+                        fallbackLowRes = privateIcon;
+                    }
+                }
+            }
+
+            // 4. Try IShellItemImageFactory (renders high-res 256x256 icons for .lnk, .exe, UWP, folders)
+            if (result == null)
+            {
+                // Try raw shortcut path first (so shell renders the shortcut's actual icon)
+                if (!string.IsNullOrEmpty(rawPath) && (File.Exists(rawPath) || Directory.Exists(rawPath)))
+                {
+                    var shellItemIcon = ExtractShellItemIcon(rawPath, 256);
+                    if (shellItemIcon != null && shellItemIcon.PixelWidth >= 48)
+                    {
+                        result = shellItemIcon;
+                    }
+                    else if (shellItemIcon != null && fallbackLowRes == null)
+                    {
+                        fallbackLowRes = shellItemIcon;
+                    }
+                }
+
+                // If not resolved from rawPath, try targetPath
+                if (result == null && !string.IsNullOrEmpty(targetPath) && !string.Equals(targetPath, rawPath, StringComparison.OrdinalIgnoreCase) && (File.Exists(targetPath) || Directory.Exists(targetPath)))
+                {
+                    var shellItemIcon = ExtractShellItemIcon(targetPath, 256);
+                    if (shellItemIcon != null && shellItemIcon.PixelWidth >= 48)
+                    {
+                        result = shellItemIcon;
+                    }
+                    else if (shellItemIcon != null && fallbackLowRes == null)
+                    {
+                        fallbackLowRes = shellItemIcon;
+                    }
+                }
+            }
+
+            // 5. Try Store App package assets if path points to WindowsApps
+            if (result == null && !string.IsNullOrEmpty(targetPath) && targetPath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase))
             {
                 result = TryExtractStoreAppLogo(targetPath);
             }
 
-            // 2. If path points to an existing file or directory, extract Shell Jumbo 256x256 or PrivateExtractIcons
+            // 6. Try Shell Jumbo 256x256 image list
             if (result == null && !string.IsNullOrEmpty(targetPath) && (File.Exists(targetPath) || Directory.Exists(targetPath)))
             {
-                result = ExtractShellJumboIcon(targetPath);
-                if (result == null && File.Exists(targetPath))
+                var jumbo = ExtractShellJumboIcon(targetPath);
+                if (jumbo is BitmapSource bs && bs.PixelWidth >= 48)
                 {
-                    result = ExtractPrivateIcon(targetPath, 256);
+                    result = jumbo;
                 }
-                if (result == null && File.Exists(targetPath))
+                else if (jumbo is BitmapSource bsSmall && fallbackLowRes == null)
                 {
-                    try
-                    {
-                        using Icon? icon = Icon.ExtractAssociatedIcon(targetPath);
-                        if (icon != null)
-                        {
-                            result = CreateBitmapSourceFromHIcon(icon.Handle);
-                        }
-                    }
-                    catch { }
+                    fallbackLowRes = bsSmall;
                 }
             }
 
-            // 3. If no icon yet and we have a valid HWND, query real process path or WM_GETICON
+            // 7. If HWND is valid, query process info or WM_GETICON / class icon
             if (result == null && hWnd != IntPtr.Zero)
             {
                 var (procName, exePath) = GetProcessInfo(hWnd);
                 if (procName.Contains("whatsapp", StringComparison.OrdinalIgnoreCase))
                 {
-                    isWhatsApp = true;
+                    result = CreateWhatsAppVectorIcon();
                 }
-                if (procName.Contains("systemsettings", StringComparison.OrdinalIgnoreCase))
+                else if (procName.Contains("systemsettings", StringComparison.OrdinalIgnoreCase))
                 {
-                    isSettings = true;
+                    result = CreateSettingsVectorIcon();
                 }
-
-                if (!string.IsNullOrEmpty(exePath))
+                else if (!string.IsNullOrEmpty(exePath))
                 {
                     if (exePath.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase))
                     {
@@ -517,10 +593,10 @@ namespace WinDock.Native
                     }
                     if (result == null && File.Exists(exePath))
                     {
-                        result = ExtractShellJumboIcon(exePath);
+                        result = ExtractPrivateIcon(exePath, 256, 0);
                         if (result == null)
                         {
-                            result = ExtractPrivateIcon(exePath, 256);
+                            result = ExtractShellItemIcon(exePath, 256);
                         }
                     }
                 }
@@ -545,17 +621,31 @@ namespace WinDock.Native
                 }
             }
 
-            // 4. Branded high-resolution vector icons (WhatsApp, Settings, etc.)
-            if (result == null && isWhatsApp)
+            // 8. Try System.Drawing AssociatedIcon
+            if (result == null && !string.IsNullOrEmpty(targetPath) && File.Exists(targetPath))
             {
-                result = CreateWhatsAppVectorIcon();
-            }
-            else if (result == null && isSettings)
-            {
-                result = CreateSettingsVectorIcon();
+                try
+                {
+                    using Icon? icon = Icon.ExtractAssociatedIcon(targetPath);
+                    if (icon != null)
+                    {
+                        var assoc = CreateBitmapSourceFromHIcon(icon.Handle);
+                        if (assoc != null && fallbackLowRes == null)
+                        {
+                            fallbackLowRes = assoc;
+                        }
+                    }
+                }
+                catch { }
             }
 
-            // 5. Fallback: generate a crisp modern letter squircle badge if all extraction fails
+            // 9. Use low-res candidate if no high-res was found
+            if (result == null && fallbackLowRes != null)
+            {
+                result = fallbackLowRes;
+            }
+
+            // 10. Fallback: generate a crisp modern letter squircle badge if all extraction fails
             if (result == null)
             {
                 string fallbackText = !string.IsNullOrWhiteSpace(title)
@@ -670,6 +760,105 @@ namespace WinDock.Native
             return renderTarget;
         }
 
+        private static readonly Guid IID_IShellItemImageFactory = new Guid("bcc18b79-ba16-442f-80c4-7a5977f709c1");
+
+        private static BitmapSource? ExtractShellItemIcon(string path, int size = 256)
+        {
+            if (string.IsNullOrEmpty(path) || (!File.Exists(path) && !Directory.Exists(path))) return null;
+
+            try
+            {
+                var guid = IID_IShellItemImageFactory;
+                int hr = NativeMethods.SHCreateItemFromParsingName(path, IntPtr.Zero, ref guid, out var factory);
+                if (hr == 0 && factory != null)
+                {
+                    var sz = new NativeMethods.SIZE(size, size);
+                    hr = factory.GetImage(sz, NativeMethods.SIIGBF.SIIGBF_BIGGERSIZEOK | NativeMethods.SIIGBF.SIIGBF_ICONONLY, out IntPtr hBitmap);
+                    if (hr == 0 && hBitmap != IntPtr.Zero)
+                    {
+                        return CreateBitmapSourceFromHBitmap(hBitmap);
+                    }
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private static BitmapSource? CreateBitmapSourceFromHBitmap(IntPtr hBitmap)
+        {
+            if (hBitmap == IntPtr.Zero) return null;
+            try
+            {
+                var dib = new NativeMethods.BITMAP();
+                if (NativeMethods.GetObject(hBitmap, Marshal.SizeOf<NativeMethods.BITMAP>(), out dib) == 0)
+                    return null;
+
+                int width = dib.bmWidth;
+                int height = Math.Abs(dib.bmHeight);
+                if (width <= 0 || height <= 0) return null;
+
+                int stride = width * 4;
+                byte[] pixels = new byte[stride * height];
+
+                var bmi = new NativeMethods.BITMAPINFO();
+                bmi.bmiHeader.biSize = (uint)Marshal.SizeOf<NativeMethods.BITMAPINFOHEADER>();
+                bmi.bmiHeader.biWidth = width;
+                bmi.bmiHeader.biHeight = -height; // Top-down DIB
+                bmi.bmiHeader.biPlanes = 1;
+                bmi.bmiHeader.biBitCount = 32;
+                bmi.bmiHeader.biCompression = 0; // BI_RGB
+
+                IntPtr hdc = NativeMethods.GetDC(IntPtr.Zero);
+                try
+                {
+                    int lines = NativeMethods.GetDIBits(hdc, hBitmap, 0, (uint)height, pixels, ref bmi, 0);
+                    if (lines == 0) return null;
+                }
+                finally
+                {
+                    NativeMethods.ReleaseDC(IntPtr.Zero, hdc);
+                }
+
+                bool hasAlpha = false;
+                for (int i = 3; i < pixels.Length; i += 4)
+                {
+                    if (pixels[i] > 0)
+                    {
+                        hasAlpha = true;
+                        break;
+                    }
+                }
+
+                if (!hasAlpha)
+                {
+                    for (int i = 3; i < pixels.Length; i += 4)
+                    {
+                        pixels[i] = 255;
+                    }
+                }
+
+                var source = BitmapSource.Create(
+                    width,
+                    height,
+                    96,
+                    96,
+                    PixelFormats.Bgra32,
+                    null,
+                    pixels,
+                    stride);
+                source.Freeze();
+                return source;
+            }
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+                NativeMethods.DeleteObject(hBitmap);
+            }
+        }
+
         private static ImageSource? ExtractShellJumboIcon(string path)
         {
             try
@@ -740,13 +929,14 @@ namespace WinDock.Native
             return jumbo;
         }
 
-        private static ImageSource? ExtractPrivateIcon(string exePath, int size = 256)
+        private static BitmapSource? ExtractPrivateIcon(string exePath, int size = 256, int iconIndex = 0)
         {
             try
             {
+                if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath)) return null;
                 IntPtr[] phicon = new IntPtr[1];
                 uint[] piconid = new uint[1];
-                uint count = NativeMethods.PrivateExtractIcons(exePath, 0, size, size, phicon, piconid, 1, 0);
+                uint count = NativeMethods.PrivateExtractIcons(exePath, iconIndex, size, size, phicon, piconid, 1, 0);
                 if (count > 0 && phicon[0] != IntPtr.Zero)
                 {
                     return CreateBitmapSourceFromHIcon(phicon[0]);
@@ -756,7 +946,7 @@ namespace WinDock.Native
             return null;
         }
 
-        private static ImageSource? CreateBitmapSourceFromHIcon(IntPtr hIcon)
+        private static BitmapSource? CreateBitmapSourceFromHIcon(IntPtr hIcon)
         {
             if (hIcon == IntPtr.Zero) return null;
             try

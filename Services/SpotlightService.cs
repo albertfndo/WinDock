@@ -235,7 +235,7 @@ namespace WinDock.Services
                 Title = app.Name,
                 Subtitle = $"Application • {Path.GetFileName(app.ExecutablePath)}",
                 Category = SpotlightCategory.Application,
-                Icon = WindowHelper.GetWindowIcon(IntPtr.Zero, app.ExecutablePath),
+                Icon = WindowHelper.GetWindowIcon(IntPtr.Zero, app.ExecutablePath, app.Name),
                 LaunchPath = app.ExecutablePath,
                 ExecuteAction = () => DockManager.LaunchProcess(app.ExecutablePath)
             };

@@ -144,9 +144,41 @@ namespace WinDock.Views
 
         private void OnNotchClicked(object sender, RoutedEventArgs e) => RequestToggleNotch?.Invoke();
 
-        private void OnQuickSettingsClicked(object sender, RoutedEventArgs e) => OpenUri("ms-actioncenter:controlcenter/&");
+        private void OnQuickSettingsClicked(object sender, RoutedEventArgs e) => ToggleQuickSettings();
 
-        private void OnClockClicked(object sender, RoutedEventArgs e) => OpenUri("ms-actioncenter:");
+        private void OnClockClicked(object sender, RoutedEventArgs e) => ToggleNotificationCenter();
+
+        public static void ToggleQuickSettings()
+        {
+            try
+            {
+                // Win + A toggles Windows Quick Settings / Action Center on and off
+                NativeMethods.keybd_event(NativeMethods.VK_LWIN, 0, 0, 0);
+                NativeMethods.keybd_event(0x41, 0, 0, 0); // 'A' keydown
+                NativeMethods.keybd_event(0x41, 0, NativeMethods.KEYEVENTF_KEYUP, 0); // 'A' keyup
+                NativeMethods.keybd_event(NativeMethods.VK_LWIN, 0, NativeMethods.KEYEVENTF_KEYUP, 0); // Win keyup
+            }
+            catch
+            {
+                OpenUri("ms-actioncenter:controlcenter/&");
+            }
+        }
+
+        public static void ToggleNotificationCenter()
+        {
+            try
+            {
+                // Win + N toggles Windows Calendar & Notification Center on and off
+                NativeMethods.keybd_event(NativeMethods.VK_LWIN, 0, 0, 0);
+                NativeMethods.keybd_event(0x4E, 0, 0, 0); // 'N' keydown
+                NativeMethods.keybd_event(0x4E, 0, NativeMethods.KEYEVENTF_KEYUP, 0); // 'N' keyup
+                NativeMethods.keybd_event(NativeMethods.VK_LWIN, 0, NativeMethods.KEYEVENTF_KEYUP, 0); // Win keyup
+            }
+            catch
+            {
+                OpenUri("ms-actioncenter:");
+            }
+        }
 
         private void OnVolumeMouseWheel(object sender, MouseWheelEventArgs e)
         {

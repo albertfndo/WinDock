@@ -48,9 +48,12 @@ namespace WinDock.Views
             _dockManager = manager;
         }
 
-        public void LoadApplications()
+        public void LoadApplications(bool forceReload = false)
         {
-            _allApps = _spotlightService.GetAllIndexedApps();
+            if (forceReload || _allApps.Count == 0)
+            {
+                _allApps = _spotlightService.GetAllIndexedApps();
+            }
             ApplyFilter();
         }
 

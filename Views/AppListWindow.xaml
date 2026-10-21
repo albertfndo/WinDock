@@ -257,7 +257,11 @@
                                 <Grid Width="80" Height="80" HorizontalAlignment="Center">
                                     <Image Source="{Binding Icon}"
                                            Visibility="{Binding Icon, Converter={StaticResource NullToVis}}"
-                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                           RenderOptions.BitmapScalingMode="HighQuality"
+                                           RenderOptions.EdgeMode="Aliased"
+                                           SnapsToDevicePixels="True"
+                                           UseLayoutRounding="True"
+                                           Width="80" Height="80" />
                                     <!-- No icon: monogram tile -->
                                     <Border Visibility="{Binding Icon, Converter={StaticResource NullToVis}, ConverterParameter=invert}"
                                             CornerRadius="18" Background="#3A3A44">

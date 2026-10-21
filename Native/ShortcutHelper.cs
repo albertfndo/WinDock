@@ -56,7 +56,16 @@ namespace WinDock.Native
         /// </summary>
         public static string ResolveShortcut(string lnkPath)
         {
-            if (!File.Exists(lnkPath)) return lnkPath;
+            var (target, _, _) = ResolveShortcutDetails(lnkPath);
+            return target;
+        }
+
+        /// <summary>
+        /// Resolves a Windows shortcut (.lnk) file to its target path, icon location, and icon index.
+        /// </summary>
+        public static (string targetPath, string iconPath, int iconIndex) ResolveShortcutDetails(string lnkPath)
+        {
+            if (!File.Exists(lnkPath)) return (lnkPath, string.Empty, 0);
 
             try
             {
@@ -64,15 +73,30 @@ namespace WinDock.Native
                 var file = (IPersistFile)link;
                 file.Load(lnkPath, 0);
 
-                var sb = new StringBuilder(260);
-                link.GetPath(sb, sb.Capacity, out _, 0);
+                var sbTarget = new StringBuilder(1024);
+                link.GetPath(sbTarget, sbTarget.Capacity, out _, 0);
 
-                string target = sb.ToString();
-                return string.IsNullOrWhiteSpace(target) ? lnkPath : target;
+                var sbIcon = new StringBuilder(1024);
+                int iconIndex = 0;
+                try
+                {
+                    link.GetIconLocation(sbIcon, sbIcon.Capacity, out iconIndex);
+                }
+                catch { }
+
+                string target = sbTarget.ToString();
+                string iconLoc = sbIcon.ToString();
+
+                if (!string.IsNullOrWhiteSpace(iconLoc))
+                {
+                    iconLoc = Environment.ExpandEnvironmentVariables(iconLoc);
+                }
+
+                return (string.IsNullOrWhiteSpace(target) ? lnkPath : target, iconLoc, iconIndex);
             }
             catch
             {
-                return lnkPath;
+                return (lnkPath, string.Empty, 0);
             }
         }
     }

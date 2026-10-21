@@ -34,6 +34,45 @@ namespace WinDock.Native
             }
         }
 
+        public void UnregisterAll()
+        {
+            for (int i = 9001; i <= _currentId; i++)
+            {
+                NativeMethods.UnregisterHotKey(_hwnd, i);
+            }
+        }
+
+        public static (uint modifiers, uint key) ParseHotKey(string hotkeyStr)
+        {
+            uint mods = 0;
+            uint key = (uint)System.Windows.Forms.Keys.Space;
+
+            if (string.IsNullOrWhiteSpace(hotkeyStr))
+                return (NativeMethods.MOD_ALT, (uint)System.Windows.Forms.Keys.Space);
+
+            var parts = hotkeyStr.Split(new[] { "+", " " }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var part in parts)
+            {
+                if (part.Equals("Alt", StringComparison.OrdinalIgnoreCase))
+                    mods |= NativeMethods.MOD_ALT;
+                else if (part.Equals("Ctrl", StringComparison.OrdinalIgnoreCase) || part.Equals("Control", StringComparison.OrdinalIgnoreCase))
+                    mods |= NativeMethods.MOD_CONTROL;
+                else if (part.Equals("Shift", StringComparison.OrdinalIgnoreCase))
+                    mods |= NativeMethods.MOD_SHIFT;
+                else if (part.Equals("Win", StringComparison.OrdinalIgnoreCase) || part.Equals("Windows", StringComparison.OrdinalIgnoreCase))
+                    mods |= NativeMethods.MOD_WIN;
+                else
+                {
+                    if (Enum.TryParse<System.Windows.Forms.Keys>(part, true, out var parsedKey))
+                    {
+                        key = (uint)parsedKey;
+                    }
+                }
+            }
+
+            return (mods, key);
+        }
+
         private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             if (msg == NativeMethods.WM_HOTKEY)

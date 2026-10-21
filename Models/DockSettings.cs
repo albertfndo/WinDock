@@ -25,6 +25,9 @@ namespace WinDock.Models
         public string Theme { get; set; } = "DarkGlass"; // DarkGlass, LightGlass, OLED, Cyberpunk
         public string AccentColor { get; set; } = "#3B82F6"; // Electric Blue
         public bool LaunchAtStartup { get; set; } = true;
+        public bool AutoSystemTheme { get; set; } = true; // Automatically switch between Dark and Light glass
+        public string SpotlightHotKey { get; set; } = "Alt+Space"; // Alt+Space, Ctrl+Space, Win+Space
+        public string TaskbarHotKey { get; set; } = "Win+Alt+D"; // Win+Alt+D, Ctrl+Alt+T, Win+Shift+T
 
         public List<PinnedAppConfig> PinnedApps { get; set; } = new()
         {

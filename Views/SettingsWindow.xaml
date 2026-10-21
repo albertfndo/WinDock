@@ -80,6 +80,15 @@
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="❓ Shortcuts Guide" Click="OnOpenShortcutsGuideClicked"
+                            Background="#2038BDF8" Foreground="#38BDF8" BorderBrush="#4038BDF8" BorderThickness="1"
+                            FontSize="11" FontWeight="SemiBold" Padding="9,3" Cursor="Hand" Margin="0,0,8,0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6" />
+                            </Style>
+                        </Button.Resources>
+                    </Button>
                     <Button Content="✨ Setup Wizard" Click="OnRunSetupWizardClicked"
                             Background="#2038BDF8" Foreground="#38BDF8" BorderBrush="#4038BDF8" BorderThickness="1"
                             FontSize="11" FontWeight="SemiBold" Padding="9,3" Cursor="Hand" Margin="0,0,12,0">
@@ -181,6 +190,12 @@
                                     ValueChanged="OnBorderRadiusChanged"
                                     Margin="0,0,0,12" />
 
+                            <!-- Auto System Theme Adaptation -->
+                            <CheckBox x:Name="ChkAutoTheme" Style="{StaticResource ModernToggle}"
+                                      Content="Auto-adapt to Windows Theme (Dark Glass / Light Glass)" />
+                            <TextBlock Text="Dynamically switches dock glass between Dark Glass and Light Glass based on Windows system theme."
+                                       Foreground="#64748B" FontSize="10" Margin="24,-2,0,10" />
+
                             <!-- 3. Dock Tint Palette -->
                             <TextBlock Text="Background Tint" Foreground="#F1F5F9" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,6" />
                             <StackPanel Orientation="Horizontal">
@@ -271,6 +286,37 @@
                             <Slider x:Name="SliderIconSize" Minimum="36" Maximum="72" Value="52"
                                     TickFrequency="2" IsSnapToTickEnabled="True"
                                     ValueChanged="OnIconSizeChanged" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section: Customizable Shortcuts -->
+                    <TextBlock Text="GLOBAL KEYBOARD SHORTCUTS" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+
+                    <Border Background="#1E293B" CornerRadius="10" Padding="14,10" Margin="0,0,0,14">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,8">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Spotlight Search Shortcut" Foreground="#F1F5F9" FontSize="12" />
+                                    <TextBlock Text="Opens MacBook-style Spotlight search &amp; calculator" Foreground="#64748B" FontSize="10" />
+                                </StackPanel>
+                                <ComboBox x:Name="ComboSpotlightKey" HorizontalAlignment="Right" Width="170" VerticalAlignment="Center">
+                                    <ComboBoxItem Content="Alt+Space (Default)" Tag="Alt+Space" />
+                                    <ComboBoxItem Content="Ctrl+Space" Tag="Ctrl+Space" />
+                                    <ComboBoxItem Content="Win+Space" Tag="Win+Space" />
+                                </ComboBox>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,2">
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Toggle Taskbar Shortcut" Foreground="#F1F5F9" FontSize="12" />
+                                    <TextBlock Text="Shows or hides Windows native taskbar" Foreground="#64748B" FontSize="10" />
+                                </StackPanel>
+                                <ComboBox x:Name="ComboTaskbarKey" HorizontalAlignment="Right" Width="170" VerticalAlignment="Center">
+                                    <ComboBoxItem Content="Win+Alt+D (Default)" Tag="Win+Alt+D" />
+                                    <ComboBoxItem Content="Ctrl+Alt+T" Tag="Ctrl+Alt+T" />
+                                    <ComboBoxItem Content="Win+Shift+T" Tag="Win+Shift+T" />
+                                </ComboBox>
+                            </Grid>
                         </StackPanel>
                     </Border>
 

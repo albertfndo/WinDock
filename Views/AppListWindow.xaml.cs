@@ -246,11 +246,22 @@ namespace WinDock.Views
             Hide();
         }
 
+        private void OnHelpClicked(object sender, RoutedEventArgs e)
+        {
+            var help = new HelpWindow();
+            help.Show();
+        }
+
         private void OnWindowPreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape)
             {
                 Hide();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.F1)
+            {
+                OnHelpClicked(sender, e);
                 e.Handled = true;
             }
         }

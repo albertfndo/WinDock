@@ -1,0 +1,231 @@
+<Window x:Class="WinDock.Views.HelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="WinDock Help &amp; Shortcuts"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Width="640"
+        Height="620"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        PreviewKeyDown="OnWindowPreviewKeyDown">
+
+    <Window.Resources>
+        <!-- Shortcut badge style -->
+        <Style x:Key="KeyBadge" TargetType="Border">
+            <Setter Property="Background" Value="#25FFFFFF" />
+            <Setter Property="BorderBrush" Value="#40FFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="7,3" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#2563EB" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- Main Container with Frosted Glass Gradient -->
+    <Border CornerRadius="18" Padding="22">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#F00F172A" Offset="0.0" />
+                <GradientStop Color="#F8080C16" Offset="1.0" />
+            </LinearGradientBrush>
+        </Border.Background>
+        <Border.BorderBrush>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#40FFFFFF" Offset="0.0" />
+                <GradientStop Color="#18FFFFFF" Offset="1.0" />
+            </LinearGradientBrush>
+        </Border.BorderBrush>
+        <Border.BorderThickness>1</Border.BorderThickness>
+
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Color="#000000" Opacity="0.75" />
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,14">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="12" Height="12" CornerRadius="6" Background="#38BDF8" Margin="0,0,10,0">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="8" Color="#38BDF8" ShadowDepth="0" Opacity="0.8" />
+                        </Border.Effect>
+                    </Border>
+                    <StackPanel>
+                        <TextBlock Text="WinDock Shortcuts &amp; Feature Guide" Foreground="#F8FAFC" FontSize="16" FontWeight="Bold" />
+                        <TextBlock Text="Quick reference for keyboard shortcuts, dock gestures, and shelf workflows"
+                                   Foreground="#94A3B8" FontSize="11" Margin="0,2,0,0" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Button Content="✕" Click="OnCloseClicked"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Background="Transparent" BorderThickness="0"
+                        Foreground="#94A3B8" FontSize="16" Cursor="Hand" />
+            </Grid>
+
+            <!-- Scrollable Content -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,-8,0">
+                <StackPanel Margin="0,0,8,0">
+
+                    <!-- Section 1: Keyboard Shortcuts -->
+                    <TextBlock Text="KEYBOARD SHORTCUTS" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,4,0,8" />
+                    <Border Background="#162032" BorderBrush="#25FFFFFF" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,0,14">
+                        <StackPanel>
+                            <!-- Win Key -->
+                            <Grid Margin="0,4">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource KeyBadge}"><TextBlock Text="Win" Foreground="#F8FAFC" FontSize="11" FontWeight="Bold" /></Border>
+                                    <TextBlock Text="Solitary tap" Foreground="#94A3B8" FontSize="11" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="Toggle WinDock Launchpad / Start Menu" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+
+                            <!-- Alt + Space -->
+                            <Grid Margin="0,4">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource KeyBadge}"><TextBlock Text="Alt" Foreground="#F8FAFC" FontSize="11" FontWeight="Bold" /></Border>
+                                    <TextBlock Text="+" Foreground="#64748B" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <Border Style="{StaticResource KeyBadge}"><TextBlock Text="Space" Foreground="#F8FAFC" FontSize="11" FontWeight="Bold" /></Border>
+                                </StackPanel>
+                                <TextBlock Text="Open Spotlight Search &amp; Math Calculator" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+
+                            <!-- Win + Alt + D -->
+                            <Grid Margin="0,4">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource KeyBadge}"><TextBlock Text="Win" Foreground="#F8FAFC" FontSize="11" FontWeight="Bold" /></Border>
+                                    <TextBlock Text="+" Foreground="#64748B" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <Border Style="{StaticResource KeyBadge}"><TextBlock Text="Alt" Foreground="#F8FAFC" FontSize="11" FontWeight="Bold" /></Border>
+                                    <TextBlock Text="+" Foreground="#64748B" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <Border Style="{StaticResource KeyBadge}"><TextBlock Text="D" Foreground="#F8FAFC" FontSize="11" FontWeight="Bold" /></Border>
+                                </StackPanel>
+                                <TextBlock Text="Toggle Windows Taskbar visibility" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+
+                            <!-- Esc -->
+                            <Grid Margin="0,4">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource KeyBadge}"><TextBlock Text="Esc" Foreground="#F8FAFC" FontSize="11" FontWeight="Bold" /></Border>
+                                </StackPanel>
+                                <TextBlock Text="Dismiss active Launchpad, Spotlight, or Drop Shelf" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+
+                            <!-- F1 -->
+                            <Grid Margin="0,4">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Border Style="{StaticResource KeyBadge}"><TextBlock Text="F1" Foreground="#F8FAFC" FontSize="11" FontWeight="Bold" /></Border>
+                                </StackPanel>
+                                <TextBlock Text="Open this Help &amp; Shortcuts Guide" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section 2: Dock Widgets & Mouse Gestures -->
+                    <TextBlock Text="DOCK WIDGETS &amp; MOUSE GESTURES" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+                    <Border Background="#162032" BorderBrush="#25FFFFFF" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,0,14">
+                        <StackPanel>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="🔊 Volume Icon Scroll" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Hover cursor and scroll wheel to step volume up / down" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="🔇 Volume Icon Click" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Click volume icon to toggle mute on / off" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="🌐 Network Icon Click" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Open Windows Network &amp; Wi-Fi Settings" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="🕒 Digital Clock Click" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Open Windows Date &amp; Time Settings" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="🖥 Show Desktop Click" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Minimize all open application windows" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="🖱 App Right-Click" Foreground="#93C5FD" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Bring to Front, Minimize, Close, or Pin/Unpin" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section 3: Drag & Drop Workflows -->
+                    <TextBlock Text="DRAG &amp; DROP WORKFLOWS" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+                    <Border Background="#162032" BorderBrush="#25FFFFFF" BorderThickness="1" CornerRadius="12" Padding="14,10" Margin="0,0,0,14">
+                        <StackPanel>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="📌 Pin to Dock" Foreground="#FCD34D" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Drag any file, app, or shortcut onto the dock to pin it" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="☁ Top Drop Shelf" Foreground="#FCD34D" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Drag files to top-screen notch to hold temporarily" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="📤 Drag out from Notch" Foreground="#FCD34D" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Drag stored item out into email, browser, or editor" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section 4: System Protection & Power -->
+                    <TextBlock Text="SYSTEM PROTECTION &amp; POWER" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+                    <Border Background="#162032" BorderBrush="#25FFFFFF" BorderThickness="1" CornerRadius="12" Padding="14,10">
+                        <StackPanel>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="🛡 Background Operation" Foreground="#34D399" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Hidden from Alt+Tab, immune to accidental Alt+F4 close" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="⏻ Power &amp; Safe Exit" Foreground="#34D399" FontSize="11.5" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="Use Launchpad or Settings Exit button to restore Taskbar" Foreground="#E2E8F0" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Bottom Action -->
+            <Grid Grid.Row="2" Margin="0,14,0,0">
+                <TextBlock Text="Press Esc to close" Foreground="#64748B" FontSize="11" VerticalAlignment="Center" />
+                <Button Content="Got It" Click="OnCloseClicked" Style="{StaticResource ActionButtonStyle}" HorizontalAlignment="Right" />
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

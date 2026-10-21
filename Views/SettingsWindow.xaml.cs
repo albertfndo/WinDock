@@ -35,6 +35,10 @@ namespace WinDock.Views
             ChkReserveSpace.IsChecked = s.ReserveScreenSpace;
             ChkAutoHide.IsChecked = s.AutoHideDock;
             ChkEnableNotch.IsChecked = s.EnableDropNotch;
+            ChkAutoTheme.IsChecked = s.AutoSystemTheme;
+
+            SelectComboByTag(ComboSpotlightKey, s.SpotlightHotKey ?? "Alt+Space");
+            SelectComboByTag(ComboTaskbarKey, s.TaskbarHotKey ?? "Win+Alt+D");
 
             _selectedTint = s.DockTint ?? "#4B5563";
 
@@ -206,6 +210,35 @@ namespace WinDock.Views
 
         #endregion
 
+        private void SelectComboByTag(System.Windows.Controls.ComboBox combo, string tag)
+        {
+            foreach (var item in combo.Items)
+            {
+                if (item is System.Windows.Controls.ComboBoxItem cbi && string.Equals(cbi.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
+                {
+                    combo.SelectedItem = cbi;
+                    return;
+                }
+            }
+            if (combo.Items.Count > 0) combo.SelectedIndex = 0;
+        }
+
+        private string GetSelectedTag(System.Windows.Controls.ComboBox combo, string defaultVal)
+        {
+            if (combo.SelectedItem is System.Windows.Controls.ComboBoxItem cbi && cbi.Tag != null)
+            {
+                return cbi.Tag.ToString() ?? defaultVal;
+            }
+            return defaultVal;
+        }
+
+        private void OnOpenShortcutsGuideClicked(object sender, RoutedEventArgs e)
+        {
+            var help = new HelpWindow();
+            help.Owner = this;
+            help.ShowDialog();
+        }
+
         private void OnRunSetupWizardClicked(object sender, RoutedEventArgs e)
         {
             var wizard = new SetupWizardWindow();
@@ -235,6 +268,10 @@ namespace WinDock.Views
             current.ReserveScreenSpace = ChkReserveSpace.IsChecked == true;
             current.AutoHideDock = ChkAutoHide.IsChecked == true;
             current.EnableDropNotch = ChkEnableNotch.IsChecked == true;
+            current.AutoSystemTheme = ChkAutoTheme.IsChecked == true;
+
+            current.SpotlightHotKey = GetSelectedTag(ComboSpotlightKey, "Alt+Space");
+            current.TaskbarHotKey = GetSelectedTag(ComboTaskbarKey, "Win+Alt+D");
 
             current.GlassOpacity = Math.Round(SliderGlassOpacity.Value, 2);
             current.BorderRadius = Math.Round(SliderBorderRadius.Value, 0);

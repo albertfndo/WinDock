@@ -33,6 +33,8 @@ namespace WinDock.Views
         private AppListWindow? _appListWindow;
         private WindowsKeyHook? _windowsKeyHook;
         private bool _isExplicitExit = false;
+        private int _taskbarHotKeyId = -1;
+        private int _spotlightHotKeyId = -1;
 
         private DispatcherTimer? _clockTimer;
         private DispatcherTimer? _statusTimer;
@@ -119,18 +121,15 @@ namespace WinDock.Views
             _appListWindow.RequestPinToDock += path => _dockManager?.PinApplication(path);
             _appListWindow.RequestToggleNotch += ToggleNotch;
 
-            // 9. Setup Global Hotkeys:
-            //    - Win + Alt + D: Toggle Taskbar
-            //    - Alt + Space: Toggle MacBook-style Spotlight Launcher
+            // 9. Setup Global Hotkeys (Customizable via Preferences)
             try
             {
                 _hotKeyHelper = new HotKeyHelper(_hwnd);
-                int taskbarHotKeyId = _hotKeyHelper.Register(NativeMethods.MOD_WIN | NativeMethods.MOD_ALT, (uint)Keys.D);
-                int spotlightHotKeyId = _hotKeyHelper.Register(NativeMethods.MOD_ALT, (uint)Keys.Space);
+                RegisterHotKeys(settings);
 
                 _hotKeyHelper.HotKeyPressed += id =>
                 {
-                    if (id == taskbarHotKeyId)
+                    if (id == _taskbarHotKeyId)
                     {
                         TaskbarController.ToggleTaskbar();
                         if (TaskbarController.IsTaskbarHidden)
@@ -145,7 +144,7 @@ namespace WinDock.Views
                             WorkAreaHelper.RestoreOriginalWorkArea();
                         }
                     }
-                    else if (id == spotlightHotKeyId)
+                    else if (id == _spotlightHotKeyId)
                     {
                         _spotlightWindow?.Toggle();
                     }
@@ -195,9 +194,24 @@ namespace WinDock.Views
                 SetupAutoHideTimer();
             }
 
-            // 14. Apply Solid-to-Glass & Border Radius Styling
+            // 14. Apply Solid-to-Glass & Border Radius Styling + System Theme adaptation
             ApplyAppearance(settings);
-            _settingsService.SettingsChanged += () => Dispatcher.Invoke(() => ApplyAppearance(_settingsService.CurrentSettings));
+            _settingsService.SettingsChanged += () => Dispatcher.Invoke(() =>
+            {
+                ApplyAppearance(_settingsService.CurrentSettings);
+                RegisterHotKeys(_settingsService.CurrentSettings);
+            });
+
+            ThemeHelper.SystemThemeChanged += () =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (_settingsService.CurrentSettings.AutoSystemTheme)
+                    {
+                        ApplyAppearance(_settingsService.CurrentSettings);
+                    }
+                });
+            };
         }
 
         private void UpdateDividerVisibility()
@@ -251,14 +265,39 @@ namespace WinDock.Views
                 }
             }
 
-            // Solid to Glass styling
-            byte alpha = (byte)Math.Clamp((int)(settings.GlassOpacity * 255), 25, 255);
-            Color baseColor = Color.FromRgb(75, 85, 99); // #4B5563
+        private void RegisterHotKeys(DockSettings settings)
+        {
+            if (_hotKeyHelper == null) return;
             try
             {
-                if (!string.IsNullOrEmpty(settings.DockTint))
+                _hotKeyHelper.UnregisterAll();
+                var (taskbarMods, taskbarKey) = HotKeyHelper.ParseHotKey(settings.TaskbarHotKey);
+                var (spotlightMods, spotlightKey) = HotKeyHelper.ParseHotKey(settings.SpotlightHotKey);
+
+                _taskbarHotKeyId = _hotKeyHelper.Register(taskbarMods, taskbarKey);
+                _spotlightHotKeyId = _hotKeyHelper.Register(spotlightMods, spotlightKey);
+            }
+            catch { }
+        }
+
+            // Solid to Glass styling + Windows Dark/Light theme adaptation
+            string tint = settings.DockTint ?? "#4B5563";
+            if (settings.AutoSystemTheme)
+            {
+                bool isDark = ThemeHelper.IsWindowsDarkTheme();
+                if (!isDark)
                 {
-                    var converted = ColorConverter.ConvertFromString(settings.DockTint);
+                    tint = "#CBD5E1"; // Frosty light glass for Windows Light mode
+                }
+            }
+
+            byte alpha = (byte)Math.Clamp((int)(settings.GlassOpacity * 255), 25, 255);
+            Color baseColor = Color.FromRgb(75, 85, 99);
+            try
+            {
+                if (!string.IsNullOrEmpty(tint))
+                {
+                    var converted = ColorConverter.ConvertFromString(tint);
                     if (converted is Color c) baseColor = c;
                 }
             }
@@ -679,9 +718,24 @@ namespace WinDock.Views
             Application.Current.Shutdown();
         }
 
+        public void OpenHelpWindow()
+        {
+            var help = new HelpWindow();
+            help.Owner = this;
+            help.Show();
+        }
+
         protected override void OnPreviewKeyDown(System.Windows.Input.KeyEventArgs e)
         {
             base.OnPreviewKeyDown(e);
+            // F1: Open WinDock Shortcuts & Help Guide
+            if (e.Key == Key.F1)
+            {
+                OpenHelpWindow();
+                e.Handled = true;
+                return;
+            }
+
             // Block Alt+F4 from closing the background dock
             if (e.Key == Key.System && e.SystemKey == Key.F4)
             {

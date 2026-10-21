@@ -126,6 +126,12 @@ namespace WinDock.Views
                 Hide();
                 e.Handled = true;
             }
+            else if (e.Key == Key.F1)
+            {
+                var help = new HelpWindow();
+                help.Show();
+                e.Handled = true;
+            }
         }
 
         private void ExecuteSelectedItem()

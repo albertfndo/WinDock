@@ -220,7 +220,8 @@
             </Border.Background>
 
             <Border.Effect>
-                <DropShadowEffect BlurRadius="30" ShadowDepth="8" Direction="270" Color="#000000" Opacity="0.65" />
+                <!-- Subtle: the glass is translucent, so a heavy shadow bleeds through it as a dark band -->
+                <DropShadowEffect BlurRadius="18" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.22" />
             </Border.Effect>
 
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">

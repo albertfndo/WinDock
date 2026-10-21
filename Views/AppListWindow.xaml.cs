@@ -217,6 +217,28 @@ namespace WinDock.Views
             }
         }
 
+        private void OnExitWinDockClicked(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show(
+                "Are you sure you want to exit WinDock? The Windows taskbar will be restored.",
+                "Exit WinDock",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                Hide();
+                if (Application.Current.MainWindow is MainWindow mainWin)
+                {
+                    mainWin.ExitApplication();
+                }
+                else
+                {
+                    Application.Current.Shutdown();
+                }
+            }
+        }
+
         #endregion
 
         private void OnCloseClicked(object sender, RoutedEventArgs e)

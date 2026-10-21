@@ -16,7 +16,7 @@ namespace WinDock.Models
         public double IconSize { get; set; } = 52.0;
         public double MagnificationScale { get; set; } = 1.35;
         public bool AutoHideDock { get; set; } = false;
-        public bool ReserveScreenSpace { get; set; } = true;
+        public bool ReserveScreenSpace { get; set; } = false;
         public bool HideWindowsTaskbar { get; set; } = true;
         public bool EnableDropNotch { get; set; } = true;
         public double BorderRadius { get; set; } = 28.0; // 0px (sharp) to 40px (full capsule/pill)

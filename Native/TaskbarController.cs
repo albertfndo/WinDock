@@ -49,11 +49,13 @@ namespace WinDock.Native
                 IntPtr primary = GetPrimaryTaskbarHandle();
                 if (primary != IntPtr.Zero)
                 {
+                    NativeMethods.EnableWindow(primary, false);
                     NativeMethods.ShowWindow(primary, NativeMethods.SW_HIDE);
                 }
 
                 foreach (IntPtr secondary in GetSecondaryTaskbarHandles())
                 {
+                    NativeMethods.EnableWindow(secondary, false);
                     NativeMethods.ShowWindow(secondary, NativeMethods.SW_HIDE);
                 }
 
@@ -61,6 +63,7 @@ namespace WinDock.Native
                 IntPtr startBtn = NativeMethods.FindWindowEx(IntPtr.Zero, IntPtr.Zero, "Button", "Start");
                 if (startBtn != IntPtr.Zero)
                 {
+                    NativeMethods.EnableWindow(startBtn, false);
                     NativeMethods.ShowWindow(startBtn, NativeMethods.SW_HIDE);
                 }
 
@@ -82,17 +85,20 @@ namespace WinDock.Native
                 IntPtr primary = GetPrimaryTaskbarHandle();
                 if (primary != IntPtr.Zero)
                 {
+                    NativeMethods.EnableWindow(primary, true);
                     NativeMethods.ShowWindow(primary, NativeMethods.SW_SHOW);
                 }
 
                 foreach (IntPtr secondary in GetSecondaryTaskbarHandles())
                 {
+                    NativeMethods.EnableWindow(secondary, true);
                     NativeMethods.ShowWindow(secondary, NativeMethods.SW_SHOW);
                 }
 
                 IntPtr startBtn = NativeMethods.FindWindowEx(IntPtr.Zero, IntPtr.Zero, "Button", "Start");
                 if (startBtn != IntPtr.Zero)
                 {
+                    NativeMethods.EnableWindow(startBtn, true);
                     NativeMethods.ShowWindow(startBtn, NativeMethods.SW_SHOW);
                 }
 
@@ -159,5 +165,76 @@ namespace WinDock.Native
                 System.Diagnostics.Debug.WriteLine($"[TaskbarController] Error opening start menu: {ex.Message}");
             }
         }
+        #region Custom Power Controls (Shutdown, Restart, Sleep, Lock)
+
+        /// <summary>
+        /// Puts Windows to sleep (Suspend state).
+        /// </summary>
+        public static void Sleep()
+        {
+            try
+            {
+                NativeMethods.SetSuspendState(false, false, false);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TaskbarController] Sleep error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Locks the Windows user session.
+        /// </summary>
+        public static void Lock()
+        {
+            try
+            {
+                NativeMethods.LockWorkStation();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TaskbarController] Lock error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Restarts the Windows computer immediately.
+        /// </summary>
+        public static void Restart()
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("shutdown.exe", "/r /t 0")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TaskbarController] Restart error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Shuts down the Windows computer immediately.
+        /// </summary>
+        public static void Shutdown()
+        {
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("shutdown.exe", "/s /t 0")
+                {
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TaskbarController] Shutdown error: {ex.Message}");
+            }
+        }
+
+        #endregion
     }
 }

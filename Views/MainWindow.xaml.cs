@@ -29,6 +29,7 @@ namespace WinDock.Views
         private HotKeyHelper? _hotKeyHelper;
         private NotchWindow? _notchWindow;
         private SpotlightWindow? _spotlightWindow;
+        private AppListWindow? _appListWindow;
 
         private DispatcherTimer? _clockTimer;
         private DispatcherTimer? _autoHideTimer;
@@ -58,22 +59,26 @@ namespace WinDock.Views
             _shellHook.WindowActivated += hWnd => _dockManager?.HandleWindowActivated(hWnd);
             _shellHook.WindowRedrawn += hWnd => _dockManager?.RefreshWindows();
 
-            // 3. Register AppBar (work area reservation) if configured
+            // 3. Initialize Work Area Helper (prevents maximized windows from being cut off)
             var settings = _settingsService.CurrentSettings;
-            if (settings.ReserveScreenSpace)
-            {
-                _appBarHelper = new AppBarHelper(_hwnd);
-                _appBarHelper.Register(NativeMethods.ABE_BOTTOM, 75);
-            }
+            WorkAreaHelper.Initialize();
 
             // 4. Position Dock at Bottom-Center
             PositionAtBottomCenter();
 
-            // 5. Hide Windows Taskbar if configured
+            // 5. Hide Windows Taskbar if configured & update desktop work area
             if (settings.HideWindowsTaskbar)
             {
                 TaskbarController.HideTaskbar();
                 UpdateTaskbarIndicator(true);
+                if (settings.ReserveScreenSpace)
+                {
+                    WorkAreaHelper.SetReservedWorkArea((int)settings.IconSize + 20);
+                }
+                else
+                {
+                    WorkAreaHelper.SetFullScreenWorkArea();
+                }
             }
             else
             {
@@ -91,6 +96,11 @@ namespace WinDock.Views
             // 8. Spawn MacBook-style Spotlight Window
             _spotlightWindow = new SpotlightWindow();
             _spotlightWindow.AttachDockManager(_dockManager!);
+
+            // 9. Spawn Custom AppList & Power Menu Window
+            _appListWindow = new AppListWindow();
+            _appListWindow.AttachDockManager(_dockManager!);
+            _appListWindow.RequestPinToDock += path => _dockManager?.PinApplication(path);
 
             // 9. Setup Global Hotkeys:
             //    - Win + Alt + D: Toggle Taskbar
@@ -151,6 +161,18 @@ namespace WinDock.Views
                 }
             }
             PositionAtBottomCenter();
+
+            if (TaskbarController.IsTaskbarHidden)
+            {
+                if (settings.ReserveScreenSpace)
+                {
+                    WorkAreaHelper.SetReservedWorkArea((int)settings.IconSize + 20);
+                }
+                else
+                {
+                    WorkAreaHelper.SetFullScreenWorkArea();
+                }
+            }
 
             byte alpha = (byte)Math.Clamp((int)(settings.GlassOpacity * 255), 25, 255);
 
@@ -451,13 +473,30 @@ namespace WinDock.Views
 
         private void OnStartButtonClicked(object sender, RoutedEventArgs e)
         {
-            TaskbarController.OpenStartMenu();
+            _appListWindow?.Toggle();
         }
 
         private void OnToggleWindowsTaskbarClicked(object sender, RoutedEventArgs e)
         {
             TaskbarController.ToggleTaskbar();
-            UpdateTaskbarIndicator(TaskbarController.IsTaskbarHidden);
+            bool isHidden = TaskbarController.IsTaskbarHidden;
+            UpdateTaskbarIndicator(isHidden);
+
+            if (isHidden)
+            {
+                if (_settingsService.CurrentSettings.ReserveScreenSpace)
+                {
+                    WorkAreaHelper.SetReservedWorkArea((int)_settingsService.CurrentSettings.IconSize + 20);
+                }
+                else
+                {
+                    WorkAreaHelper.SetFullScreenWorkArea();
+                }
+            }
+            else
+            {
+                WorkAreaHelper.RestoreOriginalWorkArea();
+            }
         }
 
         private void OnSpotlightClicked(object sender, RoutedEventArgs e)
@@ -589,7 +628,8 @@ namespace WinDock.Views
 
         private void OnWindowClosed(object? sender, EventArgs e)
         {
-            // CRITICAL SAFETY: Always restore Windows Taskbar when WinDock exits
+            // CRITICAL SAFETY: Always restore Windows Taskbar & desktop WorkArea when WinDock exits
+            WorkAreaHelper.RestoreOriginalWorkArea();
             TaskbarController.ShowTaskbar();
 
             _appBarHelper?.Unregister();
@@ -597,6 +637,7 @@ namespace WinDock.Views
             _hotKeyHelper?.Dispose();
             _notchWindow?.Close();
             _spotlightWindow?.Close();
+            _appListWindow?.Close();
         }
     }
 }

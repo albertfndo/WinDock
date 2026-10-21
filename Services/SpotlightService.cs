@@ -27,6 +27,17 @@ namespace WinDock.Services
             IndexApplications();
         }
 
+        /// <summary>
+        /// Returns all indexed applications for the AppList / Launchpad drawer.
+        /// </summary>
+        public List<SpotlightItem> GetAllIndexedApps()
+        {
+            return _indexedApps
+                .OrderBy(a => a.Name)
+                .Select(CreateAppItem)
+                .ToList();
+        }
+
         public void IndexApplications()
         {
             if (_isIndexed) return;

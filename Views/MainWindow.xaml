@@ -138,7 +138,7 @@
                 <!-- 1. Start Menu Button -->
                 <Button Style="{StaticResource TrayButtonStyle}"
                         Click="OnStartButtonClicked"
-                        ToolTip="Windows Start Menu"
+                        ToolTip="Applications &amp; Power Menu (Launchpad)"
                         Margin="2,0,4,0">
                     <Grid Width="38" Height="38">
                         <Border Background="#2038BDF8" CornerRadius="10" BorderBrush="#3038BDF8" BorderThickness="1">

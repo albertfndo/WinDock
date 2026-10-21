@@ -65,6 +65,7 @@ namespace WinDock.Services
                 }
 
                 // 3. Add Essential Windows Built-in Utilities
+                AddBuiltInTool("WhatsApp", "whatsapp:", "WhatsApp Messenger");
                 AddBuiltInTool("Settings", "ms-settings:", "System Configuration");
                 AddBuiltInTool("Task Manager", "taskmgr.exe", "System Activity Monitor");
                 AddBuiltInTool("Calculator", "calc.exe", "Windows Calculator");

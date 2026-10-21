@@ -405,5 +405,22 @@ namespace WinDock.Native
         public static extern bool SetSuspendState(bool hibernate, bool forceCritical, bool disableWakeEvent);
 
         #endregion
+
+        #region Kernel32.dll
+
+        public const uint PROCESS_QUERY_INFORMATION = 0x0400;
+        public const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr OpenProcess(uint processAccess, bool bInheritHandle, uint processId);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern bool QueryFullProcessImageName(IntPtr hProcess, uint flags, StringBuilder lpExeName, ref uint lpdwSize);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool CloseHandle(IntPtr hObject);
+
+        #endregion
     }
 }

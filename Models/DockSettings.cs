@@ -42,6 +42,12 @@ namespace WinDock.Models
             },
             new PinnedAppConfig
             {
+                Title = "WhatsApp",
+                ProcessName = "WhatsApp",
+                LaunchPath = "whatsapp:"
+            },
+            new PinnedAppConfig
+            {
                 Title = "Notepad",
                 ProcessName = "notepad",
                 LaunchPath = "notepad.exe"

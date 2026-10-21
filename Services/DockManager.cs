@@ -106,6 +106,8 @@ namespace WinDock.Services
                     var pinnedItem = _pinnedItems.FirstOrDefault(i =>
                         (string.Equals(i.ProcessName, win.ProcName, StringComparison.OrdinalIgnoreCase)) ||
                         (string.Equals(i.Title, win.Title, StringComparison.OrdinalIgnoreCase)) ||
+                        (win.ProcName.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase) && i.Title.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase)) ||
+                        (win.ProcName.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase) && i.ProcessName.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase)) ||
                         (!string.IsNullOrEmpty(i.LaunchPath) && !string.IsNullOrEmpty(win.ExePath) &&
                          string.Equals(Path.GetFileName(i.LaunchPath), Path.GetFileName(win.ExePath), StringComparison.OrdinalIgnoreCase)));
 
@@ -130,7 +132,9 @@ namespace WinDock.Services
                         var existing = currentUnpinned.FirstOrDefault(i =>
                             i.WindowHandle == win.Hwnd ||
                             (string.Equals(i.ProcessName, win.ProcName, StringComparison.OrdinalIgnoreCase) &&
-                             string.Equals(i.Title, win.Title, StringComparison.OrdinalIgnoreCase)));
+                             string.Equals(i.Title, win.Title, StringComparison.OrdinalIgnoreCase)) ||
+                            (win.ProcName.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase) &&
+                             i.ProcessName.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase)));
 
                         if (existing != null)
                         {
@@ -239,6 +243,22 @@ namespace WinDock.Services
         {
             try
             {
+                if (path.Equals("whatsapp", StringComparison.OrdinalIgnoreCase) ||
+                    path.Equals("whatsapp.exe", StringComparison.OrdinalIgnoreCase) ||
+                    path.Equals("whatsapp:", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = "whatsapp:",
+                            UseShellExecute = true
+                        });
+                        return;
+                    }
+                    catch { }
+                }
+
                 var psi = new ProcessStartInfo
                 {
                     FileName = path,
@@ -255,6 +275,14 @@ namespace WinDock.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[DockManager] Launch error for {path}: {ex.Message}");
+                if (path.Contains("whatsapp", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo { FileName = "whatsapp:", UseShellExecute = true });
+                    }
+                    catch { }
+                }
             }
         }
 

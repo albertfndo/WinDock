@@ -201,7 +201,6 @@
                                                FontWeight="SemiBold"
                                                TextAlignment="Center"
                                                TextTrimming="CharacterEllipsis"
-                                               MaxLines="2"
                                                Margin="0,4,0,0" />
                                 </Grid>
                             </Border>

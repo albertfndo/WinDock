@@ -68,7 +68,6 @@
                 Height="34"
                 CornerRadius="0,0,18,18"
                 BorderThickness="1,0,1,1"
-                BorderBrush="#44FFFFFF"
                 MouseEnter="OnNotchMouseEnter"
                 MouseLeave="OnNotchMouseLeave"
                 MouseLeftButtonDown="OnNotchMouseLeftButtonDown"
@@ -76,13 +75,20 @@
 
             <Border.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                    <GradientStop Color="#EE0F172A" Offset="0.0" />
-                    <GradientStop Color="#F5020617" Offset="1.0" />
+                    <GradientStop Color="#F00F172A" Offset="0.0" />
+                    <GradientStop Color="#FA050811" Offset="1.0" />
                 </LinearGradientBrush>
             </Border.Background>
 
+            <Border.BorderBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#45FFFFFF" Offset="0.0" />
+                    <GradientStop Color="#15FFFFFF" Offset="1.0" />
+                </LinearGradientBrush>
+            </Border.BorderBrush>
+
             <Border.Effect>
-                <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Color="#000000" Opacity="0.55" />
+                <DropShadowEffect BlurRadius="24" ShadowDepth="6" Direction="270" Color="#000000" Opacity="0.65" />
             </Border.Effect>
 
             <Grid>

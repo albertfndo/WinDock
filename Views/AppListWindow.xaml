@@ -120,14 +120,23 @@
     </Window.Resources>
 
     <!-- Main Container -->
-    <Border Background="#F40F172A"
-            BorderBrush="#38455C"
-            BorderThickness="1"
-            CornerRadius="18"
-            Padding="20,16">
+    <Border CornerRadius="20" Padding="20,16">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#F00F172A" Offset="0.0" />
+                <GradientStop Color="#F8080C16" Offset="1.0" />
+            </LinearGradientBrush>
+        </Border.Background>
+        <Border.BorderBrush>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#45FFFFFF" Offset="0.0" />
+                <GradientStop Color="#18FFFFFF" Offset="1.0" />
+            </LinearGradientBrush>
+        </Border.BorderBrush>
+        <Border.BorderThickness>1</Border.BorderThickness>
 
         <Border.Effect>
-            <DropShadowEffect BlurRadius="40" Color="#000000" Opacity="0.75" />
+            <DropShadowEffect BlurRadius="42" ShadowDepth="10" Direction="270" Color="#000000" Opacity="0.7" />
         </Border.Effect>
 
         <Grid>
@@ -148,13 +157,20 @@
 
                 <!-- User Profile Info -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
-                    <Border Width="34" Height="34" CornerRadius="17" Background="#2563EB" Margin="0,0,10,0">
+                    <Border Width="36" Height="36" CornerRadius="18" Margin="0,0,10,0">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#3B82F6" Offset="0.0" />
+                                <GradientStop Color="#8B5CF6" Offset="1.0" />
+                            </LinearGradientBrush>
+                        </Border.Background>
                         <TextBlock x:Name="UserInitialText" Text="U" Foreground="White" FontSize="14" FontWeight="Bold"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock x:Name="UserNameText" Text="User" Foreground="#F8FAFC" FontSize="13" FontWeight="Bold" />
-                        <TextBlock Text="Applications" Foreground="#94A3B8" FontSize="10" />
+                        <TextBlock x:Name="UserNameText" Text="User" Foreground="#F8FAFC" FontSize="13.5" FontWeight="SemiBold"
+                                   FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif" />
+                        <TextBlock Text="WinDock Launchpad" Foreground="#94A3B8" FontSize="10.5" />
                     </StackPanel>
                 </StackPanel>
 
@@ -163,8 +179,8 @@
                         Background="#1E293B"
                         BorderBrush="#334155"
                         BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="10,6"
+                        CornerRadius="12"
+                        Padding="12,6"
                         Margin="0,0,12,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -220,9 +236,9 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <!-- App Tile -->
-                            <Border Width="100" Height="90" Margin="4,4"
+                            <Border Width="104" Height="92" Margin="4,4"
                                     Background="Transparent"
-                                    CornerRadius="12"
+                                    CornerRadius="14"
                                     Padding="6,8"
                                     Cursor="Hand"
                                     MouseLeftButtonUp="OnAppClicked"
@@ -349,6 +365,12 @@
                                 <MenuItem Header="Shut Down..." Click="OnShutdownClicked" Style="{StaticResource PowerMenuItemStyle}" Foreground="#FCA5A5">
                                     <MenuItem.Icon>
                                         <TextBlock Text="⏻" FontSize="13" Foreground="#EF4444" FontWeight="Bold" VerticalAlignment="Center" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <Separator Style="{StaticResource PowerMenuSeparatorStyle}" />
+                                <MenuItem Header="Exit WinDock" Click="OnExitWinDockClicked" Style="{StaticResource PowerMenuItemStyle}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="✕" FontSize="11" Foreground="#94A3B8" FontWeight="Bold" VerticalAlignment="Center" />
                                     </MenuItem.Icon>
                                 </MenuItem>
                             </ContextMenu>

@@ -86,6 +86,25 @@ namespace WinDock.Services
                 return true;
             }, IntPtr.Zero);
 
+            // Fallback: If WhatsApp process is running, ensure it is represented even if UWP/packaged window style differed
+            if (!discoveredWindows.Any(w => w.ProcName.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase) ||
+                                            w.Title.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase)))
+            {
+                try
+                {
+                    var waProcs = Process.GetProcessesByName("WhatsApp");
+                    if (waProcs != null && waProcs.Length > 0)
+                    {
+                        var p = waProcs[0];
+                        IntPtr waHwnd = p.MainWindowHandle;
+                        string? exe = null;
+                        try { exe = p.MainModule?.FileName; } catch { }
+                        discoveredWindows.Add((waHwnd, "WhatsApp", "WhatsApp", exe));
+                    }
+                }
+                catch { }
+            }
+
             Application.Current.Dispatcher.Invoke(() =>
             {
                 // 1. Reset running states for pinned items
@@ -186,7 +205,8 @@ namespace WinDock.Services
 
         public void HandleWindowCreated(IntPtr hWnd)
         {
-            if (!WindowHelper.IsAltTabWindow(hWnd, _dockHwnd)) return;
+            // Windows ShellHook fires when window is first created and properties might still be initializing.
+            // Refresh unconditionally so new apps like WhatsApp are immediately detected.
             RefreshWindows();
         }
 

@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.IO;
 using System.Text.Json;
@@ -35,6 +36,20 @@ namespace WinDock.Services
                     var settings = JsonSerializer.Deserialize<DockSettings>(json);
                     if (settings != null)
                     {
+                        if (settings.PinnedApps == null || settings.PinnedApps.Count == 0)
+                        {
+                            settings.PinnedApps = new DockSettings().PinnedApps;
+                        }
+                        else if (!settings.PinnedApps.Any(p => p.Title.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase)))
+                        {
+                            // Ensure WhatsApp default pinned app is present
+                            settings.PinnedApps.Insert(Math.Min(2, settings.PinnedApps.Count), new PinnedAppConfig
+                            {
+                                Title = "WhatsApp",
+                                ProcessName = "WhatsApp",
+                                LaunchPath = "whatsapp:"
+                            });
+                        }
                         return settings;
                     }
                 }

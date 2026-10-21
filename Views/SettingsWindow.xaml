@@ -42,13 +42,23 @@
     </Window.Resources>
 
     <!-- Main Dialog Window -->
-    <Border Background="#F80F172A"
-            BorderBrush="#38455C"
-            BorderThickness="1"
-            CornerRadius="16"
-            Padding="22">
+    <Border CornerRadius="18" Padding="22">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#F00F172A" Offset="0.0" />
+                <GradientStop Color="#F8080C16" Offset="1.0" />
+            </LinearGradientBrush>
+        </Border.Background>
+        <Border.BorderBrush>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#40FFFFFF" Offset="0.0" />
+                <GradientStop Color="#18FFFFFF" Offset="1.0" />
+            </LinearGradientBrush>
+        </Border.BorderBrush>
+        <Border.BorderThickness>1</Border.BorderThickness>
+
         <Border.Effect>
-            <DropShadowEffect BlurRadius="30" Color="#000000" Opacity="0.75" />
+            <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Color="#000000" Opacity="0.7" />
         </Border.Effect>
 
         <Grid>
@@ -174,14 +184,30 @@
                             <!-- 3. Dock Tint Palette -->
                             <TextBlock Text="Background Tint" Foreground="#F1F5F9" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,6" />
                             <StackPanel Orientation="Horizontal">
-                                <Button Content="Slate Gray" Click="OnTintSlateClicked"
-                                        Background="#4B5563" Foreground="White" Padding="8,4" FontSize="10.5" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}" />
-                                <Button Content="Dark Charcoal" Click="OnTintCharcoalClicked"
-                                        Background="#1F2937" Foreground="White" Padding="8,4" FontSize="10.5" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}" />
-                                <Button Content="OLED Black" Click="OnTintOledClicked"
-                                        Background="#0B0F17" Foreground="White" Padding="8,4" FontSize="10.5" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}" />
-                                <Button Content="Midnight Blue" Click="OnTintMidnightClicked"
-                                        Background="#0F172A" Foreground="White" Padding="8,4" FontSize="10.5" Style="{StaticResource ActionButtonStyle}" />
+                                <Button Click="OnTintSlateClicked" Background="#4B5563" Foreground="White" Padding="10,5" FontSize="11" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Width="8" Height="8" CornerRadius="4" Background="#6B7280" Margin="0,0,6,0" />
+                                        <TextBlock Text="Slate Gray" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Click="OnTintCharcoalClicked" Background="#1F2937" Foreground="White" Padding="10,5" FontSize="11" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Width="8" Height="8" CornerRadius="4" Background="#374151" Margin="0,0,6,0" />
+                                        <TextBlock Text="Dark Charcoal" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Click="OnTintOledClicked" Background="#0B0F17" Foreground="White" Padding="10,5" FontSize="11" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Width="8" Height="8" CornerRadius="4" Background="#1E293B" Margin="0,0,6,0" />
+                                        <TextBlock Text="OLED Black" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Click="OnTintMidnightClicked" Background="#0F172A" Foreground="White" Padding="10,5" FontSize="11" Style="{StaticResource ActionButtonStyle}">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Border Width="8" Height="8" CornerRadius="4" Background="#2563EB" Margin="0,0,6,0" />
+                                        <TextBlock Text="Midnight Blue" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -271,6 +297,7 @@
             <Grid Grid.Row="2" Margin="0,14,0,0">
                 <TextBlock Text="Hotkey: Win + Alt + D to toggle Taskbar" Foreground="#64748B" FontSize="11" VerticalAlignment="Center" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Exit WinDock" Click="OnExitWinDockClicked" Background="#7F1D1D" Foreground="#FCA5A5" Style="{StaticResource ActionButtonStyle}" Margin="0,0,12,0" />
                     <Button Content="Cancel" Click="OnCloseClicked" Background="#334155" Style="{StaticResource ActionButtonStyle}" Margin="0,0,8,0" />
                     <Button Content="Save &amp; Apply" Click="OnSaveClicked" Style="{StaticResource ActionButtonStyle}" />
                 </StackPanel>

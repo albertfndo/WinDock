@@ -31,6 +31,8 @@ namespace WinDock.Views
         private NotchWindow? _notchWindow;
         private SpotlightWindow? _spotlightWindow;
         private AppListWindow? _appListWindow;
+        private WindowsKeyHook? _windowsKeyHook;
+        private bool _isExplicitExit = false;
 
         private DispatcherTimer? _clockTimer;
         private DispatcherTimer? _statusTimer;
@@ -50,6 +52,9 @@ namespace WinDock.Views
         {
             _hwnd = new WindowInteropHelper(this).Handle;
 
+            // Hide from Alt+Tab switcher so WinDock runs purely as a background desktop dock
+            WindowHelper.HideFromAltTab(_hwnd);
+
             // 1. Initialize Dock Manager & Collections (Pinned & Running separated)
             _dockManager = new DockManager(_hwnd);
             PinnedItemsControl.ItemsSource = _dockManager.PinnedItems;
@@ -68,7 +73,11 @@ namespace WinDock.Views
             _shellHook = new ShellHookListener(_hwnd);
             _shellHook.WindowCreated += hWnd => _dockManager?.HandleWindowCreated(hWnd);
             _shellHook.WindowDestroyed += hWnd => _dockManager?.HandleWindowDestroyed(hWnd);
-            _shellHook.WindowActivated += hWnd => _dockManager?.HandleWindowActivated(hWnd);
+            _shellHook.WindowActivated += hWnd =>
+            {
+                _dockManager?.HandleWindowActivated(hWnd);
+                _dockManager?.RefreshWindows();
+            };
             _shellHook.WindowRedrawn += hWnd => _dockManager?.RefreshWindows();
 
             // 3. Initialize Work Area Helper (prevents maximized windows from being cut off or overlapped)
@@ -147,16 +156,34 @@ namespace WinDock.Views
                 Debug.WriteLine($"[MainWindow] Hotkey registration failed: {ex.Message}");
             }
 
+            // 9b. Intercept single Windows Key press to trigger WinDock Start Menu / Launchpad
+            try
+            {
+                _windowsKeyHook = new WindowsKeyHook();
+                _windowsKeyHook.WindowsKeyPressed += () =>
+                {
+                    Dispatcher.Invoke(() => _appListWindow?.Toggle());
+                };
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[MainWindow] WindowsKeyHook init failed: {ex.Message}");
+            }
+
             // 10. Start Digital Clock Timer (Jam & Tanggal)
             UpdateClock();
             _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _clockTimer.Tick += (s, ev) => UpdateClock();
             _clockTimer.Start();
 
-            // 11. Start System Status Timer (Volume & Network status)
+            // 11. Start System Status Timer (Volume, Network & Running Windows sync)
             UpdateSystemStatus();
-            _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-            _statusTimer.Tick += (s, ev) => UpdateSystemStatus();
+            _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _statusTimer.Tick += (s, ev) =>
+            {
+                UpdateSystemStatus();
+                _dockManager?.RefreshWindows();
+            };
             _statusTimer.Start();
 
             // 12. Initial Window Enumeration
@@ -259,7 +286,18 @@ namespace WinDock.Views
                     }
                 };
                 DockBar.Background = gradient;
-                DockBar.BorderBrush = new SolidColorBrush(Color.FromArgb((byte)(alpha * 0.35 + 25), 255, 255, 255));
+                byte topAlpha = (byte)Math.Min(255, alpha * 0.5 + 40);
+                byte btmAlpha = (byte)Math.Min(255, alpha * 0.2 + 15);
+                DockBar.BorderBrush = new LinearGradientBrush
+                {
+                    StartPoint = new Point(0, 0),
+                    EndPoint = new Point(0, 1),
+                    GradientStops = new GradientStopCollection
+                    {
+                        new GradientStop(Color.FromArgb(topAlpha, 255, 255, 255), 0.0),
+                        new GradientStop(Color.FromArgb(btmAlpha, 255, 255, 255), 1.0)
+                    }
+                };
             }
         }
 
@@ -635,6 +673,32 @@ namespace WinDock.Views
 
         #endregion
 
+        public void ExitApplication()
+        {
+            _isExplicitExit = true;
+            Application.Current.Shutdown();
+        }
+
+        protected override void OnPreviewKeyDown(System.Windows.Input.KeyEventArgs e)
+        {
+            base.OnPreviewKeyDown(e);
+            // Block Alt+F4 from closing the background dock
+            if (e.Key == Key.System && e.SystemKey == Key.F4)
+            {
+                e.Handled = true;
+            }
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (!_isExplicitExit)
+            {
+                e.Cancel = true; // Prevent closing from Alt+Tab or system close commands
+                return;
+            }
+            base.OnClosing(e);
+        }
+
         private void OnWindowClosed(object? sender, EventArgs e)
         {
             // CRITICAL SAFETY: Always restore Windows Taskbar & desktop WorkArea when WinDock exits
@@ -645,6 +709,7 @@ namespace WinDock.Views
             _statusTimer?.Stop();
             _autoHideTimer?.Stop();
 
+            _windowsKeyHook?.Dispose();
             _shellHook?.Dispose();
             _hotKeyHelper?.Dispose();
             _notchWindow?.Close();

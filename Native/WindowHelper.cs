@@ -63,19 +63,19 @@ namespace WinDock.Native
             // or may have an owner anchor window, or be cloaked when minimized/inactive!
             bool isWhatsApp = procName.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase) ||
                               title.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase) ||
+                              cls.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase) ||
                               (!string.IsNullOrEmpty(exePath) && exePath.Contains("WhatsApp", StringComparison.OrdinalIgnoreCase));
 
-            // If title is empty, check if it is WhatsApp or valid process
+            // If this is WhatsApp, always allow it as an active application window!
+            if (isWhatsApp)
+            {
+                return true;
+            }
+
+            // If title is empty, background daemons have empty titles
             if (string.IsNullOrWhiteSpace(title))
             {
-                if (isWhatsApp)
-                {
-                    title = "WhatsApp";
-                }
-                else
-                {
-                    return false;
-                }
+                return false;
             }
 
             // Check Extended Window Styles: exclude ToolWindows unless AppWindow is explicitly set
@@ -254,51 +254,75 @@ namespace WinDock.Native
                 // 3. If this is ApplicationFrameHost (classic UWP wrapper), resolve the real hosted UWP process!
                 if (string.Equals(procName, "ApplicationFrameHost", StringComparison.OrdinalIgnoreCase))
                 {
-                    IntPtr childCoreWindow = NativeMethods.FindWindowEx(hWnd, IntPtr.Zero, "Windows.UI.Core.CoreWindow", null);
-                    if (childCoreWindow != IntPtr.Zero)
-                    {
-                        NativeMethods.GetWindowThreadProcessId(childCoreWindow, out uint uwpPid);
-                        if (uwpPid != 0 && uwpPid != processId)
-                        {
-                            IntPtr hUwpProc = NativeMethods.OpenProcess(NativeMethods.PROCESS_QUERY_LIMITED_INFORMATION, false, uwpPid);
-                            if (hUwpProc != IntPtr.Zero)
-                            {
-                                try
-                                {
-                                    var sb = new StringBuilder(1024);
-                                    uint size = (uint)sb.Capacity;
-                                    if (NativeMethods.QueryFullProcessImageName(hUwpProc, 0, sb, ref size))
-                                    {
-                                        exePath = sb.ToString();
-                                        procName = Path.GetFileNameWithoutExtension(exePath);
-                                    }
-                                }
-                                finally
-                                {
-                                    NativeMethods.CloseHandle(hUwpProc);
-                                }
-                            }
+                    uint hostedPid = 0;
+                    string childTitle = string.Empty;
 
-                            if (string.IsNullOrEmpty(exePath) || string.Equals(procName, "ApplicationFrameHost", StringComparison.OrdinalIgnoreCase))
+                    // Enumerate all child windows to find the real hosted UWP process and child title
+                    NativeMethods.EnumChildWindows(hWnd, (childHwnd, l) =>
+                    {
+                        NativeMethods.GetWindowThreadProcessId(childHwnd, out uint cPid);
+                        if (cPid != 0 && cPid != processId)
+                        {
+                            hostedPid = cPid;
+                        }
+
+                        if (string.IsNullOrEmpty(childTitle))
+                        {
+                            string t = GetWindowTitle(childHwnd);
+                            if (!string.IsNullOrWhiteSpace(t))
                             {
-                                try
-                                {
-                                    using Process uwpProc = Process.GetProcessById((int)uwpPid);
-                                    procName = uwpProc.ProcessName;
-                                    try { exePath ??= uwpProc.MainModule?.FileName; } catch { }
-                                }
-                                catch { }
+                                childTitle = t.Trim();
                             }
+                        }
+                        return true;
+                    }, IntPtr.Zero);
+
+                    if (hostedPid != 0)
+                    {
+                        IntPtr hUwpProc = NativeMethods.OpenProcess(NativeMethods.PROCESS_QUERY_LIMITED_INFORMATION, false, hostedPid);
+                        if (hUwpProc != IntPtr.Zero)
+                        {
+                            try
+                            {
+                                var sb = new StringBuilder(1024);
+                                uint size = (uint)sb.Capacity;
+                                if (NativeMethods.QueryFullProcessImageName(hUwpProc, 0, sb, ref size))
+                                {
+                                    exePath = sb.ToString();
+                                    procName = Path.GetFileNameWithoutExtension(exePath);
+                                }
+                            }
+                            finally
+                            {
+                                NativeMethods.CloseHandle(hUwpProc);
+                            }
+                        }
+
+                        if (string.IsNullOrEmpty(exePath) || string.Equals(procName, "ApplicationFrameHost", StringComparison.OrdinalIgnoreCase))
+                        {
+                            try
+                            {
+                                using Process uwpProc = Process.GetProcessById((int)hostedPid);
+                                procName = uwpProc.ProcessName;
+                                try { exePath ??= uwpProc.MainModule?.FileName; } catch { }
+                            }
+                            catch { }
                         }
                     }
 
-                    // If child window did not yield a specific name, derive from window title (e.g. "WhatsApp", "Settings")
                     if (string.Equals(procName, "ApplicationFrameHost", StringComparison.OrdinalIgnoreCase))
                     {
-                        string title = GetWindowTitle(hWnd);
-                        if (!string.IsNullOrWhiteSpace(title))
+                        if (!string.IsNullOrWhiteSpace(childTitle))
                         {
-                            procName = title.Trim();
+                            procName = childTitle;
+                        }
+                        else
+                        {
+                            string title = GetWindowTitle(hWnd);
+                            if (!string.IsNullOrWhiteSpace(title))
+                            {
+                                procName = title.Trim();
+                            }
                         }
                     }
                 }
@@ -774,6 +798,25 @@ namespace WinDock.Native
             renderTarget.Render(visual);
             renderTarget.Freeze();
             return renderTarget;
+        }
+
+        /// <summary>
+        /// Removes the window from Windows Alt+Tab switcher by setting WS_EX_TOOLWINDOW and clearing WS_EX_APPWINDOW.
+        /// </summary>
+        public static void HideFromAltTab(IntPtr hWnd)
+        {
+            if (hWnd == IntPtr.Zero) return;
+            try
+            {
+                long exStyle = NativeMethods.GetWindowLongPtr(hWnd, NativeMethods.GWL_EXSTYLE).ToInt64();
+                exStyle |= NativeMethods.WS_EX_TOOLWINDOW;
+                exStyle &= ~NativeMethods.WS_EX_APPWINDOW;
+                NativeMethods.SetWindowLongPtr(hWnd, NativeMethods.GWL_EXSTYLE, new IntPtr(exStyle));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[WindowHelper] HideFromAltTab failed: {ex.Message}");
+            }
         }
 
         /// <summary>

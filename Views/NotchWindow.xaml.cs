@@ -42,6 +42,8 @@ namespace WinDock.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            WindowHelper.HideFromAltTab(hwnd);
             PositionAtTopCenter();
         }
 

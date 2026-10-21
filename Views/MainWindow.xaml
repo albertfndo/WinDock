@@ -25,6 +25,13 @@
         <conv:DoubleToCornerRadiusConverter x:Key="RadiusConverter" />
         <conv:StringNotEmptyToVisibilityConverter x:Key="BadgeVisConverter" />
 
+        <!-- Authentic Frosted Glass Vertical Etched Divider Brush -->
+        <LinearGradientBrush x:Key="DockDividerBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#00FFFFFF" Offset="0.0" />
+            <GradientStop Color="#50FFFFFF" Offset="0.5" />
+            <GradientStop Color="#00FFFFFF" Offset="1.0" />
+        </LinearGradientBrush>
+
         <!-- Tooltip Style -->
         <Style TargetType="ToolTip">
             <Setter Property="Background" Value="#E60F172A" />
@@ -139,7 +146,7 @@
                         Margin="0,0,0,1">
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Background" Value="#94A3B8" />
+                            <Setter Property="Background" Value="#CBD5E1" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsActive}" Value="True">
                                     <Setter Property="Background" Value="#38BDF8" />
@@ -208,7 +215,7 @@
             </Border.Background>
 
             <Border.Effect>
-                <DropShadowEffect BlurRadius="26" ShadowDepth="6" Direction="270" Color="#000000" Opacity="0.6" />
+                <DropShadowEffect BlurRadius="30" ShadowDepth="8" Direction="270" Color="#000000" Opacity="0.65" />
             </Border.Effect>
 
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -243,7 +250,7 @@
                 </Button>
 
                 <!-- Left Divider -->
-                <Rectangle Width="1" Height="28" Fill="#30FFFFFF" Margin="4,0,6,0" VerticalAlignment="Center" />
+                <Rectangle Width="1" Height="24" Fill="{StaticResource DockDividerBrush}" Margin="4,0,6,0" VerticalAlignment="Center" />
 
                 <!-- 2. Pinned Application Icons -->
                 <ItemsControl x:Name="PinnedItemsControl"
@@ -258,7 +265,7 @@
 
                 <!-- Divider between Pinned Apps and Running Apps -->
                 <Rectangle x:Name="RunningDivider"
-                           Width="1" Height="28" Fill="#30FFFFFF" Margin="6,0,6,0"
+                           Width="1" Height="24" Fill="{StaticResource DockDividerBrush}" Margin="6,0,6,0"
                            VerticalAlignment="Center" />
 
                 <!-- 3. Running (Unpinned) Application Icons -->
@@ -273,7 +280,7 @@
                 </ItemsControl>
 
                 <!-- Right Divider -->
-                <Rectangle Width="1" Height="28" Fill="#30FFFFFF" Margin="6,0,6,0" VerticalAlignment="Center" />
+                <Rectangle Width="1" Height="24" Fill="{StaticResource DockDividerBrush}" Margin="6,0,6,0" VerticalAlignment="Center" />
 
                 <!-- 4. System Widgets: Network, Volume, Clock, Show Desktop -->
 

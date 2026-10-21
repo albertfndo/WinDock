@@ -19,6 +19,8 @@ namespace WinDock.Views
             InitializeComponent();
             Loaded += (s, e) =>
             {
+                IntPtr hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                WindowHelper.HideFromAltTab(hwnd);
                 _isLoaded = true;
                 UpdatePreview();
             };
@@ -161,7 +163,18 @@ namespace WinDock.Views
                         new GradientStop(col2, 1.0)
                     }
                 };
-                PreviewDock.BorderBrush = new SolidColorBrush(Color.FromArgb((byte)(alpha * 0.35 + 25), 255, 255, 255));
+                byte topA = (byte)Math.Min(255, alpha * 0.5 + 40);
+                byte btmA = (byte)Math.Min(255, alpha * 0.2 + 15);
+                PreviewDock.BorderBrush = new LinearGradientBrush
+                {
+                    StartPoint = new Point(0, 0),
+                    EndPoint = new Point(0, 1),
+                    GradientStops = new GradientStopCollection
+                    {
+                        new GradientStop(Color.FromArgb(topA, 255, 255, 255), 0.0),
+                        new GradientStop(Color.FromArgb(btmA, 255, 255, 255), 1.0)
+                    }
+                };
             }
         }
 
@@ -238,6 +251,27 @@ namespace WinDock.Views
         {
             DialogResult = false;
             Close();
+        }
+
+        private void OnExitWinDockClicked(object sender, RoutedEventArgs e)
+        {
+            var res = MessageBox.Show(
+                "Are you sure you want to exit WinDock? The Windows taskbar will be restored.",
+                "Exit WinDock",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (res == MessageBoxResult.Yes)
+            {
+                if (Application.Current.MainWindow is MainWindow mainWin)
+                {
+                    mainWin.ExitApplication();
+                }
+                else
+                {
+                    Application.Current.Shutdown();
+                }
+            }
         }
     }
 }

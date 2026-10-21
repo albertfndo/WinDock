@@ -629,11 +629,10 @@ namespace WinDock.Native
                 string pathData = "M175.7 141.2c-2.8-1.4-16.5-8.1-19-9.1-2.6-1-4.5-1.4-6.4 1.4-1.9 2.8-7.3 9.1-9 11-1.6 1.9-3.3 2.1-6.1.7-2.8-1.4-11.8-4.4-22.5-13.9-8.3-7.4-13.9-16.6-15.5-19.4-1.6-2.8-.2-4.3 1.2-5.7 1.3-1.3 2.8-3.3 4.2-5 1.4-1.6 1.9-2.8 2.8-4.6.9-1.9.5-3.5-.2-4.9-.8-1.4-6.4-15.4-8.7-21.1-2.3-5.5-4.6-4.8-6.4-4.9-1.6 0-3.5-.1-5.4-.1-1.9 0-4.9.7-7.5 3.5-2.6 2.8-9.8 9.6-9.8 23.4s10 27.2 11.4 29.1c1.4 1.9 19.7 30.1 47.7 42.2 6.7 2.9 11.9 4.6 16 5.9 6.7 2.1 12.8 1.8 17.6 1.1 5.4-.8 16.5-6.7 18.8-13.2 2.3-6.5 2.3-12 1.6-13.2-.7-1.2-2.6-1.9-5.4-3.3zM128 32C75 32 32 75 32 128c0 19.5 5.8 37.6 15.9 52.8L35.2 224l44.6-11.7C94.4 220.3 110.8 224 128 224c53 0 96-43 96-96s-43-96-96-96zm0 172.8c-15.3 0-29.6-4.5-41.6-12.3l-3-1.8-26.4 6.9 7-25.7-2-3.1C53.7 156.4 48 142.6 48 128c0-44.1 35.9-80 80-80s80 35.9 80 80-35.9 80-80 80z";
 
                 var geom = Geometry.Parse(pathData);
-                var transformGroup = new TransformGroup();
-                transformGroup.Children.Add(new ScaleTransform(0.70, 0.70, 128, 128));
-                geom.Transform = transformGroup;
 
+                dc.PushTransform(new ScaleTransform(0.70, 0.70, 128, 128));
                 dc.DrawGeometry(System.Windows.Media.Brushes.White, null, geom);
+                dc.Pop();
             }
             renderTarget.Render(visual);
             renderTarget.Freeze();
@@ -658,11 +657,10 @@ namespace WinDock.Native
                 string gearPath = "M194.3 129.9c0-3.3-.3-6.6-.8-9.8l21.1-16.5c1.9-1.5 2.4-4.2 1.2-6.4l-20-34.6c-1.2-2.2-3.8-3.1-6.1-2.2l-24.9 10c-5.2-4-10.9-7.3-17.1-9.8l-3.8-26.5C143.6 31.6 141.2 30 138.8 30h-40c-2.4 0-4.8 1.6-5.1 4.1l-3.8 26.5c-6.2 2.5-11.9 5.8-17.1 9.8l-24.9-10c-2.3-.9-4.9 0-6.1 2.2l-20 34.6c-1.2 2.2-.7 4.9 1.2 6.4l21.1 16.5c-.5 3.2-.8 6.5-.8 9.8s.3 6.6.8 9.8l-21.1 16.5c-1.9 1.5-2.4 4.2-1.2 6.4l20 34.6c1.2 2.2 3.8 3.1 6.1 2.2l24.9-10c5.2 4 10.9 7.3 17.1 9.8l3.8 26.5c.3 2.5 2.7 4.1 5.1 4.1h40c2.4 0 4.8-1.6 5.1-4.1l3.8-26.5c6.2-2.5 11.9-5.8 17.1-9.8l24.9 10c2.3.9 4.9 0 6.1-2.2l20-34.6c1.2-2.2.7-4.9-1.2-6.4l-21.1-16.5c.5-3.2.8-6.5.8-9.8zm-66.3 38.1c-22.1 0-40-17.9-40-40s17.9-40 40-40 40 17.9 40 40-17.9 40-40 40z";
 
                 var geom = Geometry.Parse(gearPath);
-                var transformGroup = new TransformGroup();
-                transformGroup.Children.Add(new ScaleTransform(0.72, 0.72, 128, 128));
-                geom.Transform = transformGroup;
 
+                dc.PushTransform(new ScaleTransform(0.72, 0.72, 128, 128));
                 dc.DrawGeometry(new SolidColorBrush(Color.FromRgb(241, 245, 249)), null, geom);
+                dc.Pop();
             }
             renderTarget.Render(visual);
             renderTarget.Freeze();

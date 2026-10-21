@@ -254,6 +254,13 @@ namespace WinDock.Views
             if (_menuBar == null) return;
             if (TaskbarController.IsTaskbarHidden) _menuBar.Show();
             else _menuBar.Hide();
+
+            // Re-assert notch topmost so it sits on top of the bar instead of under it
+            if (_notchWindow?.IsVisible == true)
+            {
+                _notchWindow.Topmost = false;
+                _notchWindow.Topmost = true;
+            }
         }
 
         private void RegisterHotKeys(DockSettings settings)

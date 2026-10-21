@@ -22,6 +22,7 @@ namespace WinDock.Views
         private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
         private readonly Dictionary<string, string> _appNameCache = new(StringComparer.OrdinalIgnoreCase);
         private IntPtr _hwnd;
+        private AppBarHelper? _appBar;
         private static readonly string OwnProcessName = Process.GetCurrentProcess().ProcessName;
 
         public event Action? RequestLaunchpad;
@@ -35,11 +36,17 @@ namespace WinDock.Views
                 _hwnd = new WindowInteropHelper(this).Handle;
                 WindowHelper.HideFromAltTab(_hwnd);
                 PositionAtTop();
+                ReserveSpace(IsVisible);
                 Refresh();
                 _timer.Start();
             };
             _timer.Tick += (s, e) => Refresh();
-            Closed += (s, e) => _timer.Stop();
+            IsVisibleChanged += (s, e) => ReserveSpace(IsVisible);
+            Closed += (s, e) =>
+            {
+                _timer.Stop();
+                _appBar?.Unregister(); // otherwise the strip stays reserved after WinDock exits
+            };
         }
 
         public void PositionAtTop()
@@ -47,6 +54,25 @@ namespace WinDock.Views
             Left = 0;
             Top = 0;
             Width = SystemParameters.PrimaryScreenWidth;
+        }
+
+        /// <summary>
+        /// Registers the bar as a top AppBar so Explorer pushes maximized windows (Chrome tabs etc.) below it.
+        /// A plain SPI_SETWORKAREA only affects windows maximized afterwards.
+        /// </summary>
+        private void ReserveSpace(bool reserve)
+        {
+            if (_hwnd == IntPtr.Zero) return;
+            _appBar ??= new AppBarHelper(_hwnd);
+            if (reserve)
+            {
+                _appBar.Register(NativeMethods.ABE_TOP, (int)Math.Ceiling(BarHeight * WorkAreaHelper.GetDpiScale()));
+                PositionAtTop();
+            }
+            else
+            {
+                _appBar.Unregister();
+            }
         }
 
         private void Refresh()
@@ -101,8 +127,12 @@ namespace WinDock.Views
                 name = procName.Equals("explorer", StringComparison.OrdinalIgnoreCase) ? "File Explorer" : procName;
                 try
                 {
-                    string? description = exePath != null ? FileVersionInfo.GetVersionInfo(exePath).FileDescription : null;
-                    if (!string.IsNullOrWhiteSpace(description) && name != "File Explorer") name = description.Trim();
+                    var info = exePath != null ? FileVersionInfo.GetVersionInfo(exePath) : null;
+                    string? description = info?.FileDescription?.Trim();
+                    // Packaged apps often carry ids like "WhatsApp.Root" as description; ProductName is the real name then
+                    if (description != null && !description.Contains(' ') && description.Contains('.'))
+                        description = info?.ProductName?.Trim();
+                    if (!string.IsNullOrWhiteSpace(description) && name != "File Explorer") name = description;
                 }
                 catch { }
                 _appNameCache[key] = name;

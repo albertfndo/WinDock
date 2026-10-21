@@ -66,8 +66,8 @@ namespace WinDock.Native
                     {
                         Left = bounds.Left,
                         Right = bounds.Right,
-                        Top = bounds.Bottom - height,
-                        Bottom = bounds.Bottom
+                        Top = edge == NativeMethods.ABE_TOP ? bounds.Top : bounds.Bottom - height,
+                        Bottom = edge == NativeMethods.ABE_TOP ? bounds.Top + height : bounds.Bottom
                     }
                 };
 

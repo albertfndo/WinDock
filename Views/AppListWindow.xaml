@@ -7,8 +7,8 @@
         mc:Ignorable="d"
         Title="WinDock Launchpad"
         WindowStyle="None"
-        AllowsTransparency="True"
-        Background="Transparent"
+        AllowsTransparency="False"
+        Background="#0B0B10"
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
@@ -148,12 +148,16 @@
     <Grid>
         <!-- Backdrop: blurred wallpaper, dimmed (macOS Launchpad). Click empty space to close. -->
         <Grid x:Name="Backdrop" ClipToBounds="True" MouseLeftButtonUp="OnBackdropClicked" Background="#0B0B10">
+            <!-- Blur is static: cache it as a bitmap so page/opening animations don't re-run the shader -->
+            <Grid.CacheMode>
+                <BitmapCache RenderAtScale="1" />
+            </Grid.CacheMode>
             <Image x:Name="WallpaperImage" Stretch="UniformToFill" Margin="-60">
                 <Image.Effect>
                     <BlurEffect Radius="60" KernelType="Gaussian" RenderingBias="Performance" />
                 </Image.Effect>
             </Image>
-            <Rectangle Fill="#73000000" />
+            <Rectangle Fill="#80000000" />
         </Grid>
 
         <!-- Content, animated in on open -->
@@ -253,11 +257,7 @@
                                 <Grid Width="80" Height="80" HorizontalAlignment="Center">
                                     <Image Source="{Binding Icon}"
                                            Visibility="{Binding Icon, Converter={StaticResource NullToVis}}"
-                                           RenderOptions.BitmapScalingMode="HighQuality">
-                                        <Image.Effect>
-                                            <DropShadowEffect BlurRadius="10" ShadowDepth="3" Direction="270" Color="#000000" Opacity="0.3" />
-                                        </Image.Effect>
-                                    </Image>
+                                           RenderOptions.BitmapScalingMode="HighQuality" />
                                     <!-- No icon: monogram tile -->
                                     <Border Visibility="{Binding Icon, Converter={StaticResource NullToVis}, ConverterParameter=invert}"
                                             CornerRadius="18" Background="#3A3A44">
@@ -269,11 +269,7 @@
                                 <TextBlock Text="{Binding Title}"
                                            Foreground="#FFFFFF" FontSize="12.5"
                                            TextAlignment="Center" TextTrimming="CharacterEllipsis"
-                                           MaxWidth="116" Margin="0,8,0,0">
-                                    <TextBlock.Effect>
-                                        <DropShadowEffect BlurRadius="4" ShadowDepth="1" Direction="270" Color="#000000" Opacity="0.6" />
-                                    </TextBlock.Effect>
-                                </TextBlock>
+                                           MaxWidth="116" Margin="0,8,0,0" />
                             </StackPanel>
                         </Button>
                     </DataTemplate>

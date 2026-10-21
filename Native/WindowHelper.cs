@@ -686,9 +686,9 @@ namespace WinDock.Native
                 if (hr == 0 && iml != null)
                 {
                     hr = iml.GetIcon(shinfo.iIcon, NativeMethods.ILD_TRANSPARENT, out IntPtr hIcon);
-                    if (hr == 0 && hIcon != IntPtr.Zero)
+                    if (hr == 0 && hIcon != IntPtr.Zero && CreateBitmapSourceFromHIcon(hIcon) is BitmapSource jumbo)
                     {
-                        return CreateBitmapSourceFromHIcon(hIcon);
+                        return CropLegacyJumbo(jumbo);
                     }
                 }
 
@@ -705,6 +705,39 @@ namespace WinDock.Native
             }
             catch { }
             return null;
+        }
+
+        /// <summary>
+        /// Apps without a 256px icon come back from SHIL_JUMBO as a 32/48px icon in the top-left of a 256 canvas,
+        /// which renders tiny and blurry. Crop to the real icon so WPF scales it like a normal icon.
+        /// </summary>
+        private static BitmapSource CropLegacyJumbo(BitmapSource jumbo)
+        {
+            if (jumbo.PixelWidth < 256 || jumbo.PixelHeight < 256) return jumbo;
+            try
+            {
+                var bgra = jumbo.Format == PixelFormats.Bgra32 ? jumbo : new FormatConvertedBitmap(jumbo, PixelFormats.Bgra32, null, 0);
+                int w = bgra.PixelWidth, h = bgra.PixelHeight, stride = w * 4;
+                var px = new byte[stride * h];
+                bgra.CopyPixels(px, stride, 0);
+
+                foreach (int size in new[] { 32, 48 })
+                {
+                    bool emptyOutside = true;
+                    for (int y = 0; y < h && emptyOutside; y++)
+                        for (int x = y < size ? size : 0; x < w; x++)
+                            if (px[y * stride + x * 4 + 3] != 0) { emptyOutside = false; break; }
+
+                    if (emptyOutside)
+                    {
+                        var cropped = new CroppedBitmap(bgra, new Int32Rect(0, 0, size, size));
+                        cropped.Freeze();
+                        return cropped;
+                    }
+                }
+            }
+            catch { }
+            return jumbo;
         }
 
         private static ImageSource? ExtractPrivateIcon(string exePath, int size = 256)

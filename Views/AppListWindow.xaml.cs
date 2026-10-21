@@ -31,6 +31,8 @@ namespace WinDock.Views
         private List<SpotlightItem> _filtered = new();
         private int _page;
         private int _pageSize = 35;
+        private int _wheelAccum;
+        private DateTime _lastPageFlip = DateTime.MinValue;
 
         public event Action<string>? RequestPinToDock;
         public event Action? RequestToggleNotch;
@@ -152,7 +154,13 @@ namespace WinDock.Views
 
         private void OnWindowMouseWheel(object sender, MouseWheelEventArgs e)
         {
-            ChangePage(e.Delta < 0 ? 1 : -1);
+            // Touchpads fire many small deltas: flip once per notch-worth of scroll, at most every 350ms
+            _wheelAccum += e.Delta;
+            if (Math.Abs(_wheelAccum) < 120 || DateTime.Now - _lastPageFlip < TimeSpan.FromMilliseconds(350)) return;
+
+            ChangePage(_wheelAccum < 0 ? 1 : -1);
+            _wheelAccum = 0;
+            _lastPageFlip = DateTime.Now;
         }
 
         #endregion

@@ -29,16 +29,16 @@ namespace WinDock.Native
             if (hWnd == IntPtr.Zero || hWnd == dockHwnd) return false;
             if (!NativeMethods.IsWindow(hWnd)) return false;
 
-            // Must be visible OR iconic (minimized)
+            // Must be visible OR iconic (minimized window is still an open user app)
             bool isVisible = NativeMethods.IsWindowVisible(hWnd);
             bool isIconic = NativeMethods.IsIconic(hWnd);
             if (!isVisible && !isIconic) return false;
 
-            // Window title check
+            // Window title check: background processes and system daemons have empty titles
             string title = GetWindowTitle(hWnd);
             if (string.IsNullOrWhiteSpace(title)) return false;
 
-            // Exclude Windows Shell, Desktop, and background host windows
+            // Exclude Windows Shell, Desktop, and known background system classes
             StringBuilder className = new StringBuilder(256);
             NativeMethods.GetClassName(hWnd, className, 256);
             string cls = className.ToString();
@@ -47,7 +47,13 @@ namespace WinDock.Native
                 cls == "Shell_SecondaryTrayWnd" ||
                 cls == "Progman" ||
                 cls == "WorkerW" ||
-                cls == "Windows.UI.Core.CoreWindow")
+                cls == "Windows.UI.Core.CoreWindow" ||
+                cls == "ApplicationFrameTitleBarWindow" ||
+                cls == "EdgeUiInputTopWndClass" ||
+                cls == "DummyDWMListenerWindow" ||
+                cls == "GDI+ Window" ||
+                cls == "MSCTFIME UI" ||
+                cls == "Default IME")
             {
                 return false;
             }
@@ -59,11 +65,42 @@ namespace WinDock.Native
                 return false;
             }
 
-            // Exclude cloaked windows ONLY if cloaked by another virtual desktop (DWM_CLOAKED_INHERITED = 4)
-            // Do NOT exclude minimized or background UWP apps (WhatsApp, Settings) where cloaked is 1 or 2!
+            // Exclude owned windows (secondary dialogs, popup windows) unless marked as standalone AppWindow
+            IntPtr owner = NativeMethods.GetWindow(hWnd, NativeMethods.GW_OWNER);
+            if (owner != IntPtr.Zero && (exStyle & NativeMethods.WS_EX_APPWINDOW) == 0)
+            {
+                return false;
+            }
+
+            // Exclude zero-size windows (invisible background workers)
+            if (!isIconic && NativeMethods.GetWindowRect(hWnd, out NativeMethods.RECT rect))
+            {
+                if (rect.Width <= 0 || rect.Height <= 0)
+                {
+                    return false;
+                }
+            }
+
+            // Exclude cloaked windows (UWP apps running in background, background tasks, or on other virtual desktops)
+            // When an app has an active window open on screen, cloaked == 0.
+            // When an app is purely suspended/running in the background, cloaked != 0.
             int cloaked = 0;
             int hr = NativeMethods.DwmGetWindowAttribute(hWnd, NativeMethods.DWMWA_CLOAKED, out cloaked, sizeof(int));
-            if (hr == 0 && (cloaked & NativeMethods.DWM_CLOAKED_INHERITED) != 0)
+            if (hr == 0 && cloaked != 0)
+            {
+                return false;
+            }
+
+            // Exclude known background system host processes
+            var (procName, _) = GetProcessInfo(hWnd);
+            if (string.Equals(procName, "SearchHost", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "StartMenuExperienceHost", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "TextInputHost", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "ShellExperienceHost", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "LockApp", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "SystemSettingsBroker", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "PhoneExperienceHost", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(procName, "Widgets", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }

@@ -1,0 +1,265 @@
+<Window x:Class="WinDock.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="WinDock Preferences"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Width="560"
+        Height="640"
+        ResizeMode="NoResize">
+
+    <Window.Resources>
+        <Style x:Key="ModernToggle" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#F1F5F9" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="0,5" />
+        </Style>
+
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#2563EB" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- Main Dialog Window -->
+    <Border Background="#F80F172A"
+            BorderBrush="#38455C"
+            BorderThickness="1"
+            CornerRadius="16"
+            Padding="22">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="30" Color="#000000" Opacity="0.75" />
+        </Border.Effect>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="0,0,0,14">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="12" Height="12" CornerRadius="6" Background="#38BDF8" Margin="0,0,10,0">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="8" Color="#38BDF8" ShadowDepth="0" Opacity="0.8" />
+                        </Border.Effect>
+                    </Border>
+                    <TextBlock Text="WinDock Preferences &amp; Design" Foreground="#F8FAFC" FontSize="16" FontWeight="Bold" />
+                </StackPanel>
+
+                <Button Content="✕"
+                        Click="OnCloseClicked"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Background="Transparent"
+                        Foreground="#94A3B8"
+                        BorderThickness="0"
+                        FontSize="14"
+                        Cursor="Hand" />
+            </Grid>
+
+            <!-- Settings Content -->
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+
+                    <!-- Section: Style & Appearance (User Requested: Solid to Glass + Border Radius) -->
+                    <TextBlock Text="DOCK MATERIAL &amp; SHAPE" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+
+                    <Border Background="#1E293B" CornerRadius="10" Padding="14,12" Margin="0,0,0,14">
+                        <StackPanel>
+                            <!-- Live Interactive Preview Box -->
+                            <TextBlock Text="Live Preview" Foreground="#94A3B8" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <Border Height="72" Background="#0F172A" CornerRadius="10" Padding="10" Margin="0,0,0,14" BorderBrush="#25FFFFFF" BorderThickness="1">
+                                <!-- Preview Dock Surface -->
+                                <Border x:Name="PreviewDock"
+                                        Height="52"
+                                        Width="260"
+                                        CornerRadius="24"
+                                        BorderThickness="1"
+                                        BorderBrush="#40FFFFFF"
+                                        Padding="12,4"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="12" ShadowDepth="3" Color="#000000" Opacity="0.5" />
+                                    </Border.Effect>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <!-- Mock icon 1 -->
+                                        <Border Width="34" Height="34" CornerRadius="8" Background="#FF5722" Margin="4,0">
+                                            <TextBlock Text="🔥" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <!-- Mock icon 2 with red notification badge -->
+                                        <Grid Width="34" Height="34" Margin="4,0">
+                                            <Border CornerRadius="8" Background="#25D366">
+                                                <TextBlock Text="💬" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <Border Background="#EF4444" CornerRadius="7" Width="14" Height="14"
+                                                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,-2,0">
+                                                <TextBlock Text="6" Foreground="White" FontSize="8.5" FontWeight="Bold"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                        </Grid>
+                                        <!-- Mock icon 3 -->
+                                        <Border Width="34" Height="34" CornerRadius="8" Background="#5865F2" Margin="4,0">
+                                            <TextBlock Text="🎮" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <!-- Mock icon 4 -->
+                                        <Border Width="34" Height="34" CornerRadius="8" Background="#4285F4" Margin="4,0">
+                                            <TextBlock Text="🌐" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </Border>
+
+                            <!-- 1. Solid to Glass Slider -->
+                            <Grid Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Dock Style:" Foreground="#F1F5F9" FontSize="12" FontWeight="SemiBold" />
+                                    <TextBlock Text=" (Glass / Translucent ←→ Solid Matte)" Foreground="#94A3B8" FontSize="11" Margin="4,1,0,0" />
+                                </StackPanel>
+                                <TextBlock x:Name="TxtGlassValue" Text="65% Glass / 35% Solid" Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                            </Grid>
+                            <Slider x:Name="SliderGlassOpacity"
+                                    Minimum="0.10" Maximum="1.0" Value="0.65"
+                                    TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                    ValueChanged="OnGlassOpacityChanged"
+                                    Margin="0,0,0,12" />
+
+                            <!-- 2. Border Radius Slider -->
+                            <Grid Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Border Radius:" Foreground="#F1F5F9" FontSize="12" FontWeight="SemiBold" />
+                                    <TextBlock Text=" (Square 0px ←→ Full Pill 40px)" Foreground="#94A3B8" FontSize="11" Margin="4,1,0,0" />
+                                </StackPanel>
+                                <TextBlock x:Name="TxtRadiusValue" Text="28px" Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                            </Grid>
+                            <Slider x:Name="SliderBorderRadius"
+                                    Minimum="0" Maximum="40" Value="28"
+                                    TickFrequency="1" IsSnapToTickEnabled="True"
+                                    ValueChanged="OnBorderRadiusChanged"
+                                    Margin="0,0,0,12" />
+
+                            <!-- 3. Dock Tint Palette -->
+                            <TextBlock Text="Background Tint" Foreground="#F1F5F9" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Slate Gray" Click="OnTintSlateClicked"
+                                        Background="#4B5563" Foreground="White" Padding="8,4" FontSize="10.5" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}" />
+                                <Button Content="Dark Charcoal" Click="OnTintCharcoalClicked"
+                                        Background="#1F2937" Foreground="White" Padding="8,4" FontSize="10.5" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}" />
+                                <Button Content="OLED Black" Click="OnTintOledClicked"
+                                        Background="#0B0F17" Foreground="White" Padding="8,4" FontSize="10.5" Margin="0,0,6,0" Style="{StaticResource ActionButtonStyle}" />
+                                <Button Content="Midnight Blue" Click="OnTintMidnightClicked"
+                                        Background="#0F172A" Foreground="White" Padding="8,4" FontSize="10.5" Style="{StaticResource ActionButtonStyle}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section: Taskbar & Screen Integration -->
+                    <TextBlock Text="TASKBAR &amp; SCREEN INTEGRATION" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+
+                    <Border Background="#1E293B" CornerRadius="10" Padding="14,8" Margin="0,0,0,14">
+                        <StackPanel>
+                            <CheckBox x:Name="ChkHideTaskbar" Style="{StaticResource ModernToggle}"
+                                      Content="Hide Windows Taskbar automatically when WinDock runs" />
+                            <TextBlock Text="Replaces Windows taskbar with WinDock. Restores automatically when WinDock exits."
+                                       Foreground="#64748B" FontSize="10" Margin="24,-2,0,6" />
+
+                            <CheckBox x:Name="ChkReserveSpace" Style="{StaticResource ModernToggle}"
+                                      Content="Reserve Screen Space (AppBar Mode)" />
+                            <TextBlock Text="Prevents maximized windows from overlapping the dock."
+                                       Foreground="#64748B" FontSize="10" Margin="24,-2,0,6" />
+
+                            <CheckBox x:Name="ChkAutoHide" Style="{StaticResource ModernToggle}"
+                                      Content="Auto-hide Dock when mouse leaves screen bottom" />
+                            <TextBlock Text="Dock smoothly slides down and reveals when cursor touches the bottom edge."
+                                       Foreground="#64748B" FontSize="10" Margin="24,-2,0,2" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section: Dynamic Drop Notch Shelf -->
+                    <TextBlock Text="DYNAMIC DROP NOTCH (TOP SHELF)" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+
+                    <Border Background="#1E293B" CornerRadius="10" Padding="14,10" Margin="0,0,0,14">
+                        <StackPanel>
+                            <CheckBox x:Name="ChkEnableNotch" Style="{StaticResource ModernToggle}"
+                                      Content="Enable Dynamic Drop Notch at top of screen" />
+                            <TextBlock Text="Top-screen notch shelf: drag files/links in to hold temporarily, and drag out into any app."
+                                       Foreground="#64748B" FontSize="10" Margin="24,-2,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section: Magnification & Size -->
+                    <TextBlock Text="HOVER ZOOM &amp; SIZING" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+
+                    <Border Background="#1E293B" CornerRadius="10" Padding="14,10" Margin="0,0,0,14">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,4">
+                                <TextBlock Text="Hover Zoom Magnification" Foreground="#F1F5F9" FontSize="12" />
+                                <TextBlock x:Name="TxtMagValue" Text="1.35x" Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                            </Grid>
+                            <Slider x:Name="SliderMagnification" Minimum="1.0" Maximum="1.8" Value="1.35"
+                                    TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                    ValueChanged="OnMagnificationChanged" Margin="0,0,0,10" />
+
+                            <Grid Margin="0,0,0,4">
+                                <TextBlock Text="Dock Icon Size" Foreground="#F1F5F9" FontSize="12" />
+                                <TextBlock x:Name="TxtIconSizeValue" Text="52px" Foreground="#38BDF8" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Right" />
+                            </Grid>
+                            <Slider x:Name="SliderIconSize" Minimum="36" Maximum="72" Value="52"
+                                    TickFrequency="2" IsSnapToTickEnabled="True"
+                                    ValueChanged="OnIconSizeChanged" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Section: Emergency Taskbar Recovery -->
+                    <TextBlock Text="EMERGENCY TASKBAR RESTORE" Foreground="#EF4444" FontSize="11" FontWeight="Bold" Margin="0,2,0,8" />
+
+                    <Border Background="#251214" BorderBrush="#50EF4444" BorderThickness="1" CornerRadius="10" Padding="14,10">
+                        <Grid>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Force Restore Windows Taskbar" Foreground="#FCA5A5" FontWeight="SemiBold" FontSize="12" />
+                                <TextBlock Text="Instantly restores Shell_TrayWnd to visible." Foreground="#991B1B" FontSize="10" />
+                            </StackPanel>
+                            <Button Content="Restore Now" Click="OnEmergencyRestoreClicked"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center"
+                                    Background="#EF4444" Foreground="White" Padding="10,5" FontSize="11"
+                                    Style="{StaticResource ActionButtonStyle}" />
+                        </Grid>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Bottom Buttons -->
+            <Grid Grid.Row="2" Margin="0,14,0,0">
+                <TextBlock Text="Hotkey: Win + Alt + D to toggle Taskbar" Foreground="#64748B" FontSize="11" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Cancel" Click="OnCloseClicked" Background="#334155" Style="{StaticResource ActionButtonStyle}" Margin="0,0,8,0" />
+                    <Button Content="Save &amp; Apply" Click="OnSaveClicked" Style="{StaticResource ActionButtonStyle}" />
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

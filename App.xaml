@@ -1,0 +1,14 @@
+<Application x:Class="WinDock.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="Views/MainWindow.xaml">
+    <Application.Resources>
+        <!-- Global Fonts & Colors -->
+        <FontFamily x:Key="AppFont">Segoe UI Variable Display, Segoe UI, -apple-system, sans-serif</FontFamily>
+
+        <SolidColorBrush x:Key="AccentBrush" Color="#38BDF8" />
+        <SolidColorBrush x:Key="TextPrimary" Color="#F8FAFC" />
+        <SolidColorBrush x:Key="TextSecondary" Color="#94A3B8" />
+        <SolidColorBrush x:Key="SurfaceDark" Color="#0F172A" />
+    </Application.Resources>
+</Application>

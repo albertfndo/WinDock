@@ -292,9 +292,7 @@ namespace WinDock.Native
         public const byte VK_VOLUME_MUTE = 0xAD;
         public const byte VK_VOLUME_DOWN = 0xAE;
         public const byte VK_VOLUME_UP = 0xAF;
-        public const byte VK_LWIN = 0x5B;
         public const byte VK_D = 0x44;
-        public const uint KEYEVENTF_KEYUP = 0x0002;
 
 
         #endregion

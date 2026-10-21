@@ -47,6 +47,7 @@ namespace WinDock.Views
         {
             InitializeComponent();
             Loaded += OnWindowLoaded;
+            SizeChanged += (s, e) => PositionAtBottomCenter(); // SizeToContent=Width: re-center as apps come and go
             Closed += OnWindowClosed;
         }
 
@@ -161,7 +162,8 @@ namespace WinDock.Views
                 _windowsKeyHook = new WindowsKeyHook();
                 _windowsKeyHook.WindowsKeyPressed += () =>
                 {
-                    Dispatcher.Invoke(() => _appListWindow?.Toggle());
+                    // InvokeAsync: never block inside a low-level hook, Windows silently drops slow hooks
+                    Dispatcher.InvokeAsync(() => _appListWindow?.Toggle());
                 };
             }
             catch (Exception ex)
@@ -198,8 +200,10 @@ namespace WinDock.Views
             ApplyAppearance(settings);
             _settingsService.SettingsChanged += () => Dispatcher.Invoke(() =>
             {
-                ApplyAppearance(_settingsService.CurrentSettings);
-                RegisterHotKeys(_settingsService.CurrentSettings);
+                var current = _settingsService.CurrentSettings;
+                ApplyIntegration(current);
+                ApplyAppearance(current);
+                RegisterHotKeys(current);
             });
 
             ThemeHelper.SystemThemeChanged += () =>
@@ -212,6 +216,9 @@ namespace WinDock.Views
                     }
                 });
             };
+
+            // 15. Background auto-update from GitHub Releases
+            UpdateService.Start();
         }
 
         private void UpdateDividerVisibility()
@@ -219,6 +226,27 @@ namespace WinDock.Views
             if (RunningDivider != null && _dockManager != null)
             {
                 RunningDivider.Visibility = _dockManager.HasRunningItems ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        /// <summary>
+        /// Applies taskbar / notch toggles from Settings live, so "Save" takes effect without restarting WinDock.
+        /// </summary>
+        private void ApplyIntegration(DockSettings settings)
+        {
+            if (settings.HideWindowsTaskbar && !TaskbarController.IsTaskbarHidden)
+            {
+                TaskbarController.HideTaskbar();
+            }
+            else if (!settings.HideWindowsTaskbar && TaskbarController.IsTaskbarHidden)
+            {
+                TaskbarController.ShowTaskbar();
+                WorkAreaHelper.RestoreOriginalWorkArea();
+            }
+
+            if (settings.EnableDropNotch != (_notchWindow?.IsVisible == true))
+            {
+                ToggleNotch();
             }
         }
 
@@ -280,64 +308,25 @@ namespace WinDock.Views
                 }
             }
 
+            // Launchpad tile matches app icon size, with the macOS squircle ratio
+            LaunchpadTile.Width = LaunchpadTile.Height = settings.IconSize;
+            LaunchpadTile.CornerRadius = new CornerRadius(settings.IconSize * 0.225);
+
             // Solid to Glass styling + Windows Dark/Light theme adaptation
             string tint = settings.DockTint ?? "#4B5563";
-            if (settings.AutoSystemTheme)
+            if (settings.AutoSystemTheme && !ThemeHelper.IsWindowsDarkTheme())
             {
-                bool isDark = ThemeHelper.IsWindowsDarkTheme();
-                if (!isDark)
-                {
-                    tint = "#CBD5E1"; // Frosty light glass for Windows Light mode
-                }
+                tint = "#E2E8F0"; // Frosty light glass for Windows Light mode
             }
 
-            byte alpha = (byte)Math.Clamp((int)(settings.GlassOpacity * 255), 25, 255);
-            Color baseColor = Color.FromRgb(75, 85, 99);
-            try
-            {
-                if (!string.IsNullOrEmpty(tint))
-                {
-                    var converted = ColorConverter.ConvertFromString(tint);
-                    if (converted is Color c) baseColor = c;
-                }
-            }
-            catch { }
+            Color baseColor = ThemeHelper.ParseColor(tint, Color.FromRgb(75, 85, 99));
+            ThemeHelper.PaintDock(DockBar, baseColor, settings.GlassOpacity);
 
-            if (settings.GlassOpacity >= 0.95)
-            {
-                DockBar.Background = new SolidColorBrush(baseColor);
-                DockBar.BorderBrush = new SolidColorBrush(Color.FromArgb(80, 255, 255, 255));
-            }
-            else
-            {
-                var col1 = Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B);
-                byte darkerAlpha = (byte)Math.Min(255, alpha + 20);
-                var col2 = Color.FromArgb(darkerAlpha, (byte)(baseColor.R * 0.7), (byte)(baseColor.G * 0.7), (byte)(baseColor.B * 0.7));
-
-                var gradient = new LinearGradientBrush
-                {
-                    StartPoint = new Point(0, 0),
-                    EndPoint = new Point(0, 1),
-                    GradientStops = new GradientStopCollection
-                    {
-                        new GradientStop(col1, 0.0),
-                        new GradientStop(col2, 1.0)
-                    }
-                };
-                DockBar.Background = gradient;
-                byte topAlpha = (byte)Math.Min(255, alpha * 0.5 + 40);
-                byte btmAlpha = (byte)Math.Min(255, alpha * 0.2 + 15);
-                DockBar.BorderBrush = new LinearGradientBrush
-                {
-                    StartPoint = new Point(0, 0),
-                    EndPoint = new Point(0, 1),
-                    GradientStops = new GradientStopCollection
-                    {
-                        new GradientStop(Color.FromArgb(topAlpha, 255, 255, 255), 0.0),
-                        new GradientStop(Color.FromArgb(btmAlpha, 255, 255, 255), 1.0)
-                    }
-                };
-            }
+            // Light glass needs dark glyphs and text, otherwise white-on-light is unreadable
+            bool light = ThemeHelper.IsLight(baseColor) && settings.GlassOpacity >= 0.4;
+            Resources["DockGlyph"] = new SolidColorBrush(light ? Color.FromArgb(0xE6, 0x1F, 0x29, 0x37) : Color.FromArgb(0xE6, 255, 255, 255));
+            Resources["DockText"] = new SolidColorBrush(light ? Color.FromRgb(0x11, 0x18, 0x27) : Color.FromArgb(0xF5, 255, 255, 255));
+            Resources["DockTextMuted"] = new SolidColorBrush(light ? Color.FromArgb(0xB3, 0x11, 0x18, 0x27) : Color.FromArgb(0xB3, 255, 255, 255));
         }
 
         public void PositionAtBottomCenter()
@@ -657,6 +646,15 @@ namespace WinDock.Views
         private void OnShowDesktopClicked(object sender, RoutedEventArgs e)
         {
             WindowHelper.ToggleShowDesktop();
+        }
+
+        private void OnRecycleBinClicked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start("explorer.exe", "shell:RecycleBinFolder");
+            }
+            catch { }
         }
 
         private void OnDockMouseEnter(object sender, MouseEventArgs e)

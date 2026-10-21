@@ -61,6 +61,8 @@ namespace WinDock.Models
             _ => "#6B7280"
         };
 
+        public string? LaunchPath { get; set; }
+
         public ImageSource? Icon
         {
             get => _icon;

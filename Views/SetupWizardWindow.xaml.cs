@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Media;
 using WinDock.Models;
+using WinDock.Native;
 using WinDock.Services;
 
 namespace WinDock.Views
@@ -122,32 +123,8 @@ namespace WinDock.Views
 
             WizardPreviewDock.CornerRadius = new CornerRadius(radius);
 
-            Color baseColor = Color.FromRgb(75, 85, 99);
-
-            if (glass >= 0.95)
-            {
-                WizardPreviewDock.Background = new SolidColorBrush(baseColor);
-                WizardPreviewDock.BorderBrush = new SolidColorBrush(Color.FromArgb(80, 255, 255, 255));
-            }
-            else
-            {
-                byte alpha = (byte)Math.Clamp((int)(glass * 255), 25, 255);
-                var col1 = Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B);
-                byte darkerAlpha = (byte)Math.Min(255, alpha + 20);
-                var col2 = Color.FromArgb(darkerAlpha, (byte)(baseColor.R * 0.7), (byte)(baseColor.G * 0.7), (byte)(baseColor.B * 0.7));
-
-                WizardPreviewDock.Background = new LinearGradientBrush
-                {
-                    StartPoint = new Point(0, 0),
-                    EndPoint = new Point(0, 1),
-                    GradientStops = new GradientStopCollection
-                    {
-                        new GradientStop(col1, 0.0),
-                        new GradientStop(col2, 1.0)
-                    }
-                };
-                WizardPreviewDock.BorderBrush = new SolidColorBrush(Color.FromArgb((byte)(alpha * 0.35 + 25), 255, 255, 255));
-            }
+            var tint = ThemeHelper.ParseColor(_settingsService.CurrentSettings.DockTint, Color.FromRgb(75, 85, 99));
+            ThemeHelper.PaintDock(WizardPreviewDock, tint, glass);
         }
 
         private void OnFinishClicked(object sender, RoutedEventArgs e)

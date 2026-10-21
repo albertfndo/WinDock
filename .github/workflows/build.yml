@@ -7,6 +7,12 @@ on:
     branches: [ main, master ]
   workflow_dispatch: # Allows manual trigger from GitHub UI
 
+permissions:
+  contents: write # needed to publish GitHub Releases
+
+env:
+  VERSION: 1.0.${{ github.run_number }}
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -31,11 +37,12 @@ jobs:
         --self-contained true
         -p:PublishSingleFile=true
         -p:IncludeNativeLibrariesForSelfExtract=true
+        -p:Version=${{ env.VERSION }}
         -o ./publish
 
     - name: Compile Windows Installation Wizard (Inno Setup)
       run: |
-        iscc installer/WinDock_Setup.iss
+        iscc /DMyAppVersion=${{ env.VERSION }} installer/WinDock_Setup.iss
 
     - name: Upload Installation Wizard (Setup.exe)
       uses: actions/upload-artifact@v4
@@ -48,3 +55,15 @@ jobs:
       with:
         name: WinDock-Standalone-Portable
         path: ./publish/WinDock.exe
+
+    # Every successful build on main becomes a release; installed copies pick it up via UpdateService.
+    - name: Publish GitHub Release
+      if: github.event_name == 'push'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: >
+        gh release create "v${{ env.VERSION }}"
+        ./publish/installer/WinDock-Setup.exe
+        ./publish/WinDock.exe
+        --title "WinDock ${{ env.VERSION }}"
+        --generate-notes

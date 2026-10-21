@@ -98,15 +98,17 @@ namespace WinDock.Native
             }
 
             // Check Window Rect & Off-screen positioning (used by Realtek and background tray daemons):
-            if (NativeMethods.GetWindowRect(hWnd, out NativeMethods.RECT rect))
+            // Minimized windows always report -32000,-32000 here, so the rect checks only apply to restored windows;
+            // minimized ones are validated via their normal placement below.
+            if (NativeMethods.GetWindowRect(hWnd, out NativeMethods.RECT rect) && !isIconic)
             {
                 // 1. Zero size windows
-                if (!isIconic && (rect.Width <= 0 || rect.Height <= 0))
+                if (rect.Width <= 0 || rect.Height <= 0)
                 {
                     return false;
                 }
 
-                // 2. Off-screen parked coordinates (-32000 or < -5000), standard for background tray utilities like Realtek
+                // 2. Off-screen parked coordinates (< -5000), standard for background tray utilities like Realtek
                 if (rect.Left < -5000 || rect.Top < -5000 || rect.Right < -5000 || rect.Bottom < -5000)
                 {
                     return false;

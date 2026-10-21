@@ -27,6 +27,8 @@ namespace WinDock.Native
 
         public event Action? WindowsKeyPressed;
 
+        private const byte VK_MASK = 0xE8; // unassigned virtual key
+
         public WindowsKeyHook()
         {
             _proc = HookCallback;
@@ -72,9 +74,13 @@ namespace WinDock.Native
                             _winKeyPressed = false;
                             if (!_comboKeyPressed)
                             {
-                                // Clean standalone Windows key tap -> Trigger WinDock Start Menu!
+                                // Clean standalone Windows key tap -> Trigger WinDock Start Menu.
                                 WindowsKeyPressed?.Invoke();
-                                // Block standard Windows Start Menu from popping up!
+                                // Swallow this key-up, then replay mask-key + Win key-up so Windows sees "Win+<key>"
+                                // (no Start Menu) yet still releases Win. Dropping the key-up alone leaves Win stuck down.
+                                NativeMethods.keybd_event(VK_MASK, 0, 0, 0);
+                                NativeMethods.keybd_event(VK_MASK, 0, NativeMethods.KEYEVENTF_KEYUP, 0);
+                                NativeMethods.keybd_event((byte)vkCode, 0, NativeMethods.KEYEVENTF_KEYUP, 0);
                                 return (IntPtr)1;
                             }
                         }

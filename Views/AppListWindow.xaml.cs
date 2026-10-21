@@ -131,10 +131,9 @@ namespace WinDock.Views
                 var pinItem = new System.Windows.Controls.MenuItem { Header = "📌 Pin to Dock" };
                 pinItem.Click += (s, ev) =>
                 {
-                    if (item.Subtitle.Contains("•"))
+                    if (!string.IsNullOrEmpty(item.LaunchPath))
                     {
-                        string path = item.Subtitle.Split('•').Last().Trim();
-                        RequestPinToDock?.Invoke(path);
+                        RequestPinToDock?.Invoke(item.LaunchPath);
                     }
                 };
                 menu.Items.Add(pinItem);
@@ -257,6 +256,12 @@ namespace WinDock.Views
             if (e.Key == Key.Escape)
             {
                 Hide();
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Enter && AppsItemsControl.ItemsSource is IEnumerable<SpotlightItem> visible && visible.FirstOrDefault() is SpotlightItem first)
+            {
+                Hide();
+                first.ExecuteAction?.Invoke();
                 e.Handled = true;
             }
             else if (e.Key == Key.F1)

@@ -348,8 +348,8 @@ namespace WinDock.Views
 
                 if (!string.IsNullOrEmpty(item.FilePath))
                 {
-                    var openItem = new MenuItem { Header = "📂 Reveal in File Explorer" };
-                    openItem.Click += (s, ev) => DockManager.LaunchProcess("explorer.exe", false);
+                    var openItem = new MenuItem { Header = "Reveal in File Explorer" };
+                    openItem.Click += (s, ev) => System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{item.FilePath}\"");
                     menu.Items.Add(openItem);
 
                     var pinItem = new MenuItem { Header = "📌 Pin to Dock" };

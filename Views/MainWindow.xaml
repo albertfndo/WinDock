@@ -13,6 +13,7 @@
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         Height="140"
+        SizeToContent="Width"
         AllowDrop="True"
         DragEnter="OnDockDragEnter"
         DragOver="OnDockDragOver"
@@ -24,6 +25,11 @@
         <conv:GreaterThanZeroToVisibilityConverter x:Key="MultiCountToVis" />
         <conv:DoubleToCornerRadiusConverter x:Key="RadiusConverter" />
         <conv:StringNotEmptyToVisibilityConverter x:Key="BadgeVisConverter" />
+
+        <!-- Dock foreground tokens: replaced in ApplyAppearance for light tints -->
+        <SolidColorBrush x:Key="DockGlyph" Color="#E6FFFFFF" />
+        <SolidColorBrush x:Key="DockText" Color="#F5FFFFFF" />
+        <SolidColorBrush x:Key="DockTextMuted" Color="#B3FFFFFF" />
 
         <!-- Authentic Frosted Glass Vertical Etched Divider Brush -->
         <LinearGradientBrush x:Key="DockDividerBrush" StartPoint="0,0" EndPoint="0,1">
@@ -114,52 +120,37 @@
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center">
                         <Image.Effect>
-                            <DropShadowEffect BlurRadius="6" ShadowDepth="2" Color="#000000" Opacity="0.35" />
+                            <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.25" />
                         </Image.Effect>
                     </Image>
 
                     <!-- Red Notification / Window Count Badge -->
                     <Border Visibility="{Binding BadgeText, Converter={StaticResource BadgeVisConverter}}"
-                            Background="#EF4444"
-                            CornerRadius="9"
-                            MinWidth="18"
-                            Height="18"
-                            Padding="4,1"
+                            Background="#FF3B30"
+                            CornerRadius="10"
+                            MinWidth="20"
+                            Height="20"
+                            Padding="5,0"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Top"
-                            Margin="0,-4,-6,0">
+                            Margin="0,-5,-7,0">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="4" ShadowDepth="1" Color="#000000" Opacity="0.4" />
                         </Border.Effect>
-                        <TextBlock Text="{Binding BadgeText}" Foreground="White" FontSize="9.5" FontWeight="Bold"
+                        <TextBlock Text="{Binding BadgeText}" Foreground="White" FontSize="11" FontWeight="SemiBold"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                 </Grid>
 
                 <!-- Running Indicator Dot -->
                 <Border Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}"
-                        Width="5"
-                        Height="5"
-                        CornerRadius="2.5"
+                        Width="4"
+                        Height="4"
+                        CornerRadius="2"
+                        Background="{DynamicResource DockTextMuted}"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Bottom"
-                        Margin="0,0,0,1">
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="Background" Value="#CBD5E1" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsActive}" Value="True">
-                                    <Setter Property="Background" Value="#38BDF8" />
-                                    <Setter Property="Effect">
-                                        <Setter.Value>
-                                            <DropShadowEffect BlurRadius="6" Color="#38BDF8" ShadowDepth="0" Opacity="0.9" />
-                                        </Setter.Value>
-                                    </Setter>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
-                </Border>
+                        Margin="0,0,0,1" />
             </Grid>
         </DataTemplate>
     </Window.Resources>
@@ -220,33 +211,35 @@
 
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
-                <!-- 1. Start Menu Button (Launchpad, Settings & Power) -->
+                <!-- 1. Launchpad tile (WinDock Start Menu). Sized to IconSize in ApplyAppearance. -->
                 <Button Style="{StaticResource TrayButtonStyle}"
                         Click="OnStartButtonClicked"
-                        ToolTip="Applications, Settings &amp; Power Menu (Launchpad)"
-                        Margin="2,0,4,0">
-                    <Grid Width="38" Height="38">
-                        <Border Background="#2038BDF8" CornerRadius="11" BorderBrush="#4038BDF8" BorderThickness="1">
-                            <!-- Windows 4-square modern icon -->
-                            <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="18" Height="18">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="2" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="2" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-
-                                <Border Grid.Row="0" Grid.Column="0" Background="#38BDF8" CornerRadius="1.5" />
-                                <Border Grid.Row="0" Grid.Column="2" Background="#38BDF8" CornerRadius="1.5" />
-                                <Border Grid.Row="2" Grid.Column="0" Background="#38BDF8" CornerRadius="1.5" />
-                                <Border Grid.Row="2" Grid.Column="2" Background="#38BDF8" CornerRadius="1.5" />
-                            </Grid>
-                        </Border>
-                    </Grid>
+                        ToolTip="Launchpad (Win)"
+                        Padding="0"
+                        Margin="3,0,3,6">
+                    <Border x:Name="LaunchpadTile" Width="52" Height="52" CornerRadius="12">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Color="#5E5CE6" Offset="0" />
+                                <GradientStop Color="#2C2A8F" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.25" />
+                        </Border.Effect>
+                        <!-- 3x3 app grid glyph -->
+                        <UniformGrid Rows="3" Columns="3" Width="24" Height="24">
+                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
+                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
+                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
+                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
+                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
+                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
+                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
+                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
+                            <Ellipse Width="5" Height="5" Fill="#FFFFFF" />
+                        </UniformGrid>
+                    </Border>
                 </Button>
 
                 <!-- Left Divider -->
@@ -294,15 +287,15 @@
                         <!-- Wi-Fi Icon -->
                         <Path x:Name="PathWifi"
                               Data="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98C20.93 5.9 16.69 4 12 4zm0 3.5c3.8 0 7.26 1.48 9.87 3.91L12 19.3 2.13 11.41C4.74 8.98 8.2 7.5 12 7.5z"
-                              Fill="#38BDF8" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              Fill="{DynamicResource DockGlyph}" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         <!-- Ethernet Icon -->
                         <Path x:Name="PathEthernet" Visibility="Collapsed"
                               Data="M7.77 6.76L6.23 5.48.82 12l5.41 6.52 1.54-1.28L3.42 12l4.35-5.24zM7 13h2v-2H7v2zm10-2h-2v2h2v-2zm-6 2h2v-2h-2v2zm5.23-7.52l-1.54 1.28L19.04 12l-4.35 5.24 1.54 1.28L21.64 12l-5.41-6.52z"
-                              Fill="#38BDF8" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              Fill="{DynamicResource DockGlyph}" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         <!-- Disconnected Icon -->
                         <Path x:Name="PathOffline" Visibility="Collapsed"
                               Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8 0-1.85.63-3.55 1.69-4.9L16.9 18.31C15.55 19.37 13.85 20 12 20zm6.31-3.1L7.1 5.69C8.45 4.63 10.15 4 12 4c4.42 0 8 3.58 8 8 0 1.85-.63 3.55-1.69 4.9z"
-                              Fill="#EF4444" Width="13" Height="13" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              Fill="#FF3B30" Width="13" Height="13" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Grid>
                 </Button>
 
@@ -316,10 +309,10 @@
                     <Grid Width="26" Height="26">
                         <Path x:Name="PathVolumeNormal"
                               Data="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"
-                              Fill="#38BDF8" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              Fill="{DynamicResource DockGlyph}" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         <Path x:Name="PathVolumeMuted" Visibility="Collapsed"
                               Data="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27l4.73 4.73H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"
-                              Fill="#EF4444" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              Fill="#FF3B30" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Grid>
                 </Button>
 
@@ -327,11 +320,11 @@
                 <Button x:Name="BtnNotchToggle"
                         Style="{StaticResource TrayButtonStyle}"
                         Click="OnToggleNotchClicked"
-                        ToolTip="Dynamic Drop Notch Shelf (Tampilkan / Sembunyikan Notch)"
+                        ToolTip="Show / Hide Drop Shelf"
                         Margin="2,0">
                     <Grid Width="26" Height="26">
                         <Path Data="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"
-                              Fill="#38BDF8" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                              Fill="{DynamicResource DockGlyph}" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Grid>
                 </Button>
 
@@ -343,15 +336,15 @@
                     <StackPanel Orientation="Vertical" VerticalAlignment="Center">
                         <TextBlock x:Name="ClockText"
                                    Text="12:00"
-                                   Foreground="#F1F5F9"
+                                   Foreground="{DynamicResource DockText}"
                                    FontSize="12"
                                    FontWeight="SemiBold"
                                    FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif"
                                    HorizontalAlignment="Center" />
                         <TextBlock x:Name="DateText"
                                    Text="Wed, Oct 21"
-                                   Foreground="#94A3B8"
-                                   FontSize="9"
+                                   Foreground="{DynamicResource DockTextMuted}"
+                                   FontSize="10"
                                    HorizontalAlignment="Center" />
                     </StackPanel>
                 </Button>
@@ -359,11 +352,25 @@
                 <!-- Show Desktop Button (Kembali ke Desktop) -->
                 <Button Style="{StaticResource TrayButtonStyle}"
                         Click="OnShowDesktopClicked"
-                        ToolTip="Show Desktop (Kembali ke Desktop / Minimize All)"
+                        ToolTip="Show Desktop"
                         Margin="2,0,2,0">
                     <Grid Width="24" Height="26">
                         <Path Data="M20 3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h6l-2 2v1h8v-1l-2-2h6c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 13H4V5h16v11z"
-                              Fill="#94A3B8" Width="13" Height="13" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              Fill="{DynamicResource DockGlyph}" Width="13" Height="13" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                </Button>
+
+                <!-- Divider before Trash (macOS-style right section) -->
+                <Rectangle Width="1" Height="24" Fill="{StaticResource DockDividerBrush}" Margin="6,0,6,0" VerticalAlignment="Center" />
+
+                <!-- Recycle Bin -->
+                <Button Style="{StaticResource TrayButtonStyle}"
+                        Click="OnRecycleBinClicked"
+                        ToolTip="Recycle Bin"
+                        Margin="2,0,2,0">
+                    <Grid Width="26" Height="26">
+                        <Path Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                              Fill="{DynamicResource DockGlyph}" Width="14" Height="14" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Grid>
                 </Button>
 

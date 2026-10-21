@@ -137,49 +137,7 @@ namespace WinDock.Views
 
             PreviewDock.CornerRadius = new CornerRadius(radius);
 
-            Color baseColor = Color.FromRgb(75, 85, 99);
-            try
-            {
-                var converted = ColorConverter.ConvertFromString(_selectedTint);
-                if (converted is Color c) baseColor = c;
-            }
-            catch { }
-
-            if (glass >= 0.95)
-            {
-                PreviewDock.Background = new SolidColorBrush(baseColor);
-                PreviewDock.BorderBrush = new SolidColorBrush(Color.FromArgb(80, 255, 255, 255));
-            }
-            else
-            {
-                byte alpha = (byte)Math.Clamp((int)(glass * 255), 25, 255);
-                var col1 = Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B);
-                byte darkerAlpha = (byte)Math.Min(255, alpha + 20);
-                var col2 = Color.FromArgb(darkerAlpha, (byte)(baseColor.R * 0.7), (byte)(baseColor.G * 0.7), (byte)(baseColor.B * 0.7));
-
-                PreviewDock.Background = new LinearGradientBrush
-                {
-                    StartPoint = new Point(0, 0),
-                    EndPoint = new Point(0, 1),
-                    GradientStops = new GradientStopCollection
-                    {
-                        new GradientStop(col1, 0.0),
-                        new GradientStop(col2, 1.0)
-                    }
-                };
-                byte topA = (byte)Math.Min(255, alpha * 0.5 + 40);
-                byte btmA = (byte)Math.Min(255, alpha * 0.2 + 15);
-                PreviewDock.BorderBrush = new LinearGradientBrush
-                {
-                    StartPoint = new Point(0, 0),
-                    EndPoint = new Point(0, 1),
-                    GradientStops = new GradientStopCollection
-                    {
-                        new GradientStop(Color.FromArgb(topA, 255, 255, 255), 0.0),
-                        new GradientStop(Color.FromArgb(btmA, 255, 255, 255), 1.0)
-                    }
-                };
-            }
+            ThemeHelper.PaintDock(PreviewDock, ThemeHelper.ParseColor(_selectedTint, Color.FromRgb(75, 85, 99)), glass);
         }
 
         #region Tint Preset Handlers

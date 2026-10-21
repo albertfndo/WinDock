@@ -136,9 +136,6 @@
                            SnapsToDevicePixels="True"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center">
-                        <Image.Effect>
-                            <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.25" />
-                        </Image.Effect>
                     </Image>
 
                     <!-- Red Notification / Window Count Badge -->
@@ -241,9 +238,6 @@
                                     <GradientStop Color="#2C2A8F" Offset="1" />
                                 </LinearGradientBrush>
                             </Border.Background>
-                            <Border.Effect>
-                                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.25" />
-                            </Border.Effect>
                             <!-- 3x3 app grid glyph -->
                             <UniformGrid Rows="3" Columns="3" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Ellipse Width="5" Height="5" Fill="#FFFFFF" Margin="1" />
@@ -297,9 +291,6 @@
                         Margin="3,0,3,0">
                     <Grid VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,5">
                         <Border x:Name="TrashTile" Width="52" Height="52" CornerRadius="12" Background="#1AFFFFFF">
-                            <Border.Effect>
-                                <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Color="#000000" Opacity="0.25" />
-                            </Border.Effect>
                             <Path Data="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
                                   Fill="{DynamicResource DockGlyph}" Width="24" Height="24" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>

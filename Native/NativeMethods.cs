@@ -381,6 +381,15 @@ namespace WinDock.Native
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         public interface IImageList
         {
+            // COM dispatches by vtable slot: GetIcon is the 8th method, so the 7 before it must be declared
+            // (in order) even though they are never called. Omitting them makes GetIcon call Add() -> native crash.
+            [PreserveSig] int Add(IntPtr hbmImage, IntPtr hbmMask, out int pi);
+            [PreserveSig] int ReplaceIcon(int i, IntPtr hicon, out int pi);
+            [PreserveSig] int SetOverlayImage(int iImage, int iOverlay);
+            [PreserveSig] int Replace(int i, IntPtr hbmImage, IntPtr hbmMask);
+            [PreserveSig] int AddMasked(IntPtr hbmImage, int crMask, out int pi);
+            [PreserveSig] int Draw(IntPtr pimldp);
+            [PreserveSig] int Remove(int i);
             [PreserveSig]
             int GetIcon(int i, int flags, out IntPtr picon);
         }

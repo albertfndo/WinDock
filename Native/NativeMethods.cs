@@ -272,6 +272,31 @@ namespace WinDock.Native
         [DllImport("user32.dll", SetLastError = true)]
         public static extern bool LockWorkStation();
 
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern uint PrivateExtractIcons(
+            string szFileName,
+            int nIconIndex,
+            int cxIcon,
+            int cyIcon,
+            IntPtr[]? phicon,
+            uint[]? piconid,
+            uint nIcons,
+            uint flags);
+
+        [DllImport("user32.dll")]
+        public static extern uint GetDpiForSystem();
+
+        [DllImport("user32.dll")]
+        public static extern uint GetDpiForWindow(IntPtr hWnd);
+
+        public const byte VK_VOLUME_MUTE = 0xAD;
+        public const byte VK_VOLUME_DOWN = 0xAE;
+        public const byte VK_VOLUME_UP = 0xAF;
+        public const byte VK_LWIN = 0x5B;
+        public const byte VK_D = 0x44;
+        public const uint KEYEVENTF_KEYUP = 0x0002;
+
+
         #endregion
 
         #region Shell32.dll
@@ -281,6 +306,56 @@ namespace WinDock.Native
 
         [DllImport("shell32.dll", CharSet = CharSet.Auto)]
         public static extern uint ExtractIconEx(string szFileName, int nIconIndex, IntPtr[]? phiconLarge, IntPtr[]? phiconSmall, uint nIcons);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public struct SHFILEINFO
+        {
+            public IntPtr hIcon;
+            public int iIcon;
+            public uint dwAttributes;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
+            public string szDisplayName;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]
+            public string szTypeName;
+        }
+
+        public const uint SHGFI_ICON = 0x000000100;
+        public const uint SHGFI_LARGEICON = 0x000000000;
+        public const uint SHGFI_SMALLICON = 0x000000001;
+        public const uint SHGFI_SYSICONINDEX = 0x000004000;
+        public const uint SHGFI_USEFILEATTRIBUTES = 0x000000010;
+
+        public const int SHIL_LARGE = 0;
+        public const int SHIL_SMALL = 1;
+        public const int SHIL_EXTRALARGE = 2;
+        public const int SHIL_SYSSMALL = 3;
+        public const int SHIL_JUMBO = 4;
+
+        public const int ILD_TRANSPARENT = 0x00000001;
+
+        [DllImport("shell32.dll", CharSet = CharSet.Auto)]
+        public static extern IntPtr SHGetFileInfo(
+            string pszPath,
+            uint dwFileAttributes,
+            ref SHFILEINFO psfi,
+            uint cbFileInfo,
+            uint uFlags);
+
+        [DllImport("shell32.dll", EntryPoint = "#727")]
+        public static extern int SHGetImageList(
+            int iImageList,
+            ref Guid riid,
+            out IImageList ppv);
+
+        [ComImport]
+        [Guid("46EB5927-58E5-402A-9F87-B287FA04D4A4")]
+        [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        public interface IImageList
+        {
+            [PreserveSig]
+            int GetIcon(int i, int flags, out IntPtr picon);
+        }
+
 
         #endregion
 

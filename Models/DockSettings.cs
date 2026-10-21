@@ -36,13 +36,7 @@ namespace WinDock.Models
             },
             new PinnedAppConfig
             {
-                Title = "Terminal",
-                ProcessName = "WindowsTerminal",
-                LaunchPath = "wt.exe"
-            },
-            new PinnedAppConfig
-            {
-                Title = "Browser",
+                Title = "Microsoft Edge",
                 ProcessName = "msedge",
                 LaunchPath = "msedge.exe"
             },

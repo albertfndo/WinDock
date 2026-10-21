@@ -139,7 +139,21 @@ namespace WinDock.Views
             }
         }
 
-        #region Custom Power Controls
+        #region Custom Actions & Power Controls
+
+        private void OnSettingsClicked(object sender, RoutedEventArgs e)
+        {
+            Hide();
+            var settingsWindow = new SettingsWindow();
+            settingsWindow.ShowDialog();
+        }
+
+        private void OnDesktopClicked(object sender, RoutedEventArgs e)
+        {
+            Hide();
+            WindowHelper.ToggleShowDesktop();
+        }
+
 
         private void OnLockClicked(object sender, RoutedEventArgs e)
         {

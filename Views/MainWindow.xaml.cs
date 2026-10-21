@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -17,6 +18,7 @@ using DataFormats = System.Windows.DataFormats;
 using DragDropEffects = System.Windows.DragDropEffects;
 using DragEventArgs = System.Windows.DragEventArgs;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using Point = System.Windows.Point;
 
 namespace WinDock.Views
 {
@@ -25,13 +27,13 @@ namespace WinDock.Views
         private IntPtr _hwnd = IntPtr.Zero;
         private DockManager? _dockManager;
         private ShellHookListener? _shellHook;
-        private AppBarHelper? _appBarHelper;
         private HotKeyHelper? _hotKeyHelper;
         private NotchWindow? _notchWindow;
         private SpotlightWindow? _spotlightWindow;
         private AppListWindow? _appListWindow;
 
         private DispatcherTimer? _clockTimer;
+        private DispatcherTimer? _statusTimer;
         private DispatcherTimer? _autoHideTimer;
         private bool _isDockHidden = false;
 
@@ -48,9 +50,19 @@ namespace WinDock.Views
         {
             _hwnd = new WindowInteropHelper(this).Handle;
 
-            // 1. Initialize Dock Manager & Collections
+            // 1. Initialize Dock Manager & Collections (Pinned & Running separated)
             _dockManager = new DockManager(_hwnd);
-            DockItemsControl.ItemsSource = _dockManager.DockItems;
+            PinnedItemsControl.ItemsSource = _dockManager.PinnedItems;
+            RunningItemsControl.ItemsSource = _dockManager.RunningItems;
+            UpdateDividerVisibility();
+
+            _dockManager.PropertyChanged += (s, ev) =>
+            {
+                if (ev.PropertyName == nameof(DockManager.HasRunningItems))
+                {
+                    Dispatcher.Invoke(UpdateDividerVisibility);
+                }
+            };
 
             // 2. Initialize Shell Hook for real-time window tracking
             _shellHook = new ShellHookListener(_hwnd);
@@ -59,7 +71,7 @@ namespace WinDock.Views
             _shellHook.WindowActivated += hWnd => _dockManager?.HandleWindowActivated(hWnd);
             _shellHook.WindowRedrawn += hWnd => _dockManager?.RefreshWindows();
 
-            // 3. Initialize Work Area Helper (prevents maximized windows from being cut off)
+            // 3. Initialize Work Area Helper (prevents maximized windows from being cut off or overlapped)
             var settings = _settingsService.CurrentSettings;
             WorkAreaHelper.Initialize();
 
@@ -70,22 +82,17 @@ namespace WinDock.Views
             if (settings.HideWindowsTaskbar)
             {
                 TaskbarController.HideTaskbar();
-                UpdateTaskbarIndicator(true);
                 if (settings.ReserveScreenSpace)
                 {
-                    WorkAreaHelper.SetReservedWorkArea((int)settings.IconSize + 20);
+                    WorkAreaHelper.SetReservedWorkArea(settings.IconSize + 26, marginDip: 8);
                 }
                 else
                 {
                     WorkAreaHelper.SetFullScreenWorkArea();
                 }
             }
-            else
-            {
-                UpdateTaskbarIndicator(false);
-            }
 
-            // 7. Spawn Dynamic Drop Notch Window if enabled
+            // 6. Spawn Dynamic Drop Notch Window if enabled
             if (settings.EnableDropNotch)
             {
                 _notchWindow = new NotchWindow();
@@ -93,11 +100,11 @@ namespace WinDock.Views
                 _notchWindow.Show();
             }
 
-            // 8. Spawn MacBook-style Spotlight Window
+            // 7. Spawn MacBook-style Spotlight Window (Alt + Space)
             _spotlightWindow = new SpotlightWindow();
             _spotlightWindow.AttachDockManager(_dockManager!);
 
-            // 9. Spawn Custom AppList & Power Menu Window
+            // 8. Spawn Custom AppList & Power Menu Window (Launchpad)
             _appListWindow = new AppListWindow();
             _appListWindow.AttachDockManager(_dockManager!);
             _appListWindow.RequestPinToDock += path => _dockManager?.PinApplication(path);
@@ -115,7 +122,18 @@ namespace WinDock.Views
                 {
                     if (id == taskbarHotKeyId)
                     {
-                        OnToggleWindowsTaskbarClicked(this, new RoutedEventArgs());
+                        TaskbarController.ToggleTaskbar();
+                        if (TaskbarController.IsTaskbarHidden)
+                        {
+                            if (_settingsService.CurrentSettings.ReserveScreenSpace)
+                                WorkAreaHelper.SetReservedWorkArea(_settingsService.CurrentSettings.IconSize + 26, 8);
+                            else
+                                WorkAreaHelper.SetFullScreenWorkArea();
+                        }
+                        else
+                        {
+                            WorkAreaHelper.RestoreOriginalWorkArea();
+                        }
                     }
                     else if (id == spotlightHotKeyId)
                     {
@@ -125,48 +143,65 @@ namespace WinDock.Views
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[MainWindow] Hotkey registration failed: {ex.Message}");
+                Debug.WriteLine($"[MainWindow] Hotkey registration failed: {ex.Message}");
             }
 
-            // 8. Start Digital Clock Timer
+            // 10. Start Digital Clock Timer (Jam & Tanggal)
             UpdateClock();
             _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _clockTimer.Tick += (s, ev) => UpdateClock();
             _clockTimer.Start();
 
-            // 9. Initial Window Enumeration
+            // 11. Start System Status Timer (Volume & Network status)
+            UpdateSystemStatus();
+            _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _statusTimer.Tick += (s, ev) => UpdateSystemStatus();
+            _statusTimer.Start();
+
+            // 12. Initial Window Enumeration
             _dockManager.RefreshWindows();
 
-            // 10. Auto-Hide monitoring timer if enabled
+            // 13. Auto-Hide monitoring timer if enabled
             if (settings.AutoHideDock)
             {
                 SetupAutoHideTimer();
             }
 
-            // 11. Apply Solid-to-Glass & Border Radius Styling
+            // 14. Apply Solid-to-Glass & Border Radius Styling
             ApplyAppearance(settings);
             _settingsService.SettingsChanged += () => Dispatcher.Invoke(() => ApplyAppearance(_settingsService.CurrentSettings));
+        }
+
+        private void UpdateDividerVisibility()
+        {
+            if (RunningDivider != null && _dockManager != null)
+            {
+                RunningDivider.Visibility = _dockManager.HasRunningItems ? Visibility.Visible : Visibility.Collapsed;
+            }
         }
 
         public void ApplyAppearance(DockSettings settings)
         {
             DockBar.CornerRadius = new CornerRadius(settings.BorderRadius);
-            DockBar.Height = settings.IconSize + 18;
+            double barHeight = settings.IconSize + 26;
+            DockBar.Height = barHeight;
 
             if (_dockManager != null)
             {
-                foreach (var item in _dockManager.DockItems)
+                foreach (var item in _dockManager.AllItems)
                 {
                     item.IconSize = settings.IconSize;
                 }
             }
+
             PositionAtBottomCenter();
 
+            // Handle Reserve Screen Space accurately with DPI scaling
             if (TaskbarController.IsTaskbarHidden)
             {
                 if (settings.ReserveScreenSpace)
                 {
-                    WorkAreaHelper.SetReservedWorkArea((int)settings.IconSize + 20);
+                    WorkAreaHelper.SetReservedWorkArea(barHeight, marginDip: 8);
                 }
                 else
                 {
@@ -174,36 +209,48 @@ namespace WinDock.Views
                 }
             }
 
-            byte alpha = (byte)Math.Clamp((int)(settings.GlassOpacity * 255), 25, 255);
+            // Handle Auto-Hide dynamically
+            if (settings.AutoHideDock)
+            {
+                SetupAutoHideTimer();
+            }
+            else
+            {
+                _autoHideTimer?.Stop();
+                if (_isDockHidden)
+                {
+                    AnimateDockSlide(show: true);
+                }
+            }
 
-            System.Windows.Media.Color baseColor = System.Windows.Media.Color.FromRgb(75, 85, 99); // #4B5563
+            // Solid to Glass styling
+            byte alpha = (byte)Math.Clamp((int)(settings.GlassOpacity * 255), 25, 255);
+            Color baseColor = Color.FromRgb(75, 85, 99); // #4B5563
             try
             {
                 if (!string.IsNullOrEmpty(settings.DockTint))
                 {
-                    var converted = System.Windows.Media.ColorConverter.ConvertFromString(settings.DockTint);
-                    if (converted is System.Windows.Media.Color c) baseColor = c;
+                    var converted = ColorConverter.ConvertFromString(settings.DockTint);
+                    if (converted is Color c) baseColor = c;
                 }
             }
             catch { }
 
             if (settings.GlassOpacity >= 0.95)
             {
-                // Pure Solid matte background (as requested by user)
                 DockBar.Background = new SolidColorBrush(baseColor);
-                DockBar.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromArgb(80, 255, 255, 255));
+                DockBar.BorderBrush = new SolidColorBrush(Color.FromArgb(80, 255, 255, 255));
             }
             else
             {
-                // Frosted Glass gradient
-                var col1 = System.Windows.Media.Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B);
+                var col1 = Color.FromArgb(alpha, baseColor.R, baseColor.G, baseColor.B);
                 byte darkerAlpha = (byte)Math.Min(255, alpha + 20);
-                var col2 = System.Windows.Media.Color.FromArgb(darkerAlpha, (byte)(baseColor.R * 0.7), (byte)(baseColor.G * 0.7), (byte)(baseColor.B * 0.7));
+                var col2 = Color.FromArgb(darkerAlpha, (byte)(baseColor.R * 0.7), (byte)(baseColor.G * 0.7), (byte)(baseColor.B * 0.7));
 
                 var gradient = new LinearGradientBrush
                 {
-                    StartPoint = new System.Windows.Point(0, 0),
-                    EndPoint = new System.Windows.Point(0, 1),
+                    StartPoint = new Point(0, 0),
+                    EndPoint = new Point(0, 1),
                     GradientStops = new GradientStopCollection
                     {
                         new GradientStop(col1, 0.0),
@@ -211,17 +258,20 @@ namespace WinDock.Views
                     }
                 };
                 DockBar.Background = gradient;
-                DockBar.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromArgb((byte)(alpha * 0.35 + 25), 255, 255, 255));
+                DockBar.BorderBrush = new SolidColorBrush(Color.FromArgb((byte)(alpha * 0.35 + 25), 255, 255, 255));
             }
         }
 
         public void PositionAtBottomCenter()
         {
-            Screen primaryScreen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
-            var bounds = primaryScreen.Bounds;
+            double screenWidthDip = SystemParameters.PrimaryScreenWidth;
+            double screenHeightDip = SystemParameters.PrimaryScreenHeight;
 
-            Left = bounds.Left + (bounds.Width - Width) / 2;
-            Top = bounds.Bottom - Height - 8;
+            double winWidth = ActualWidth > 0 ? ActualWidth : Width;
+            double winHeight = ActualHeight > 0 ? ActualHeight : 140;
+
+            Left = (screenWidthDip - winWidth) / 2;
+            Top = screenHeightDip - winHeight - 8;
         }
 
         private void UpdateClock()
@@ -230,66 +280,83 @@ namespace WinDock.Views
             DateText.Text = DateTime.Now.ToString("ddd, MMM d");
         }
 
-        private void UpdateTaskbarIndicator(bool isHidden)
+        private void UpdateSystemStatus()
         {
-            if (isHidden)
-            {
-                TaskbarStatusIndicator.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(239, 68, 68)); // Red
-                TaskbarStatusIndicator.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 239, 68, 68));
-                BtnTaskbarToggle.ToolTip = "Windows Taskbar: Hidden (Click to Show)";
-            }
-            else
-            {
-                TaskbarStatusIndicator.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129)); // Green
-                TaskbarStatusIndicator.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 16, 185, 129));
-                BtnTaskbarToggle.ToolTip = "Windows Taskbar: Visible (Click to Hide)";
-            }
+            // 1. Network Status
+            var (isConnected, isWifi, statusText) = NetworkHelper.GetStatus();
+            BtnNetwork.ToolTip = statusText + "\nClick to open Network Settings";
+            PathWifi.Visibility = (isConnected && isWifi) ? Visibility.Visible : Visibility.Collapsed;
+            PathEthernet.Visibility = (isConnected && !isWifi) ? Visibility.Visible : Visibility.Collapsed;
+            PathOffline.Visibility = !isConnected ? Visibility.Visible : Visibility.Collapsed;
+
+            // 2. Volume Status
+            var (vol, isMuted) = AudioHelper.GetMasterVolume();
+            BtnVolume.ToolTip = $"Volume: {vol}% {(isMuted ? "(Muted)" : "")}\nScroll wheel to adjust volume\nClick to mute/unmute";
+            PathVolumeNormal.Visibility = isMuted ? Visibility.Collapsed : Visibility.Visible;
+            PathVolumeMuted.Visibility = isMuted ? Visibility.Visible : Visibility.Collapsed;
         }
 
         #region Auto-Hide Logic
 
         private void SetupAutoHideTimer()
         {
-            _autoHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
-            _autoHideTimer.Tick += (s, e) =>
+            if (_autoHideTimer == null)
             {
-                if (!_settingsService.CurrentSettings.AutoHideDock) return;
-
-                NativeMethods.GetCursorPos(out NativeMethods.POINT pt);
-                Screen primaryScreen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
-
-                bool isNearBottom = pt.Y >= primaryScreen.Bounds.Bottom - 4;
-                bool isMouseOverDock = IsMouseOver;
-
-                if (isNearBottom || isMouseOverDock)
-                {
-                    if (_isDockHidden)
-                    {
-                        AnimateDockSlide(show: true);
-                    }
-                }
-                else
-                {
-                    if (!_isDockHidden)
-                    {
-                        AnimateDockSlide(show: false);
-                    }
-                }
-            };
+                _autoHideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+                _autoHideTimer.Tick += (s, e) => CheckAutoHide();
+            }
             _autoHideTimer.Start();
+        }
+
+        private void CheckAutoHide()
+        {
+            if (!_settingsService.CurrentSettings.AutoHideDock)
+            {
+                if (_isDockHidden) AnimateDockSlide(show: true);
+                return;
+            }
+
+            NativeMethods.GetCursorPos(out NativeMethods.POINT pt);
+            Screen primaryScreen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
+
+            bool isNearBottom = (pt.Y >= primaryScreen.Bounds.Bottom - 4);
+
+            NativeMethods.GetWindowRect(_hwnd, out NativeMethods.RECT dockRect);
+            bool isCursorInDock = (pt.X >= dockRect.Left && pt.X <= dockRect.Right &&
+                                  pt.Y >= dockRect.Top && pt.Y <= dockRect.Bottom);
+
+            if (isNearBottom || isCursorInDock)
+            {
+                if (_isDockHidden)
+                {
+                    AnimateDockSlide(show: true);
+                }
+            }
+            else
+            {
+                if (!_isDockHidden)
+                {
+                    AnimateDockSlide(show: false);
+                }
+            }
         }
 
         private void AnimateDockSlide(bool show)
         {
             _isDockHidden = !show;
-            Screen primaryScreen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
 
-            double targetTop = show ? (primaryScreen.Bounds.Bottom - Height - 8) : (primaryScreen.Bounds.Bottom - 6);
+            double screenHeightDip = SystemParameters.PrimaryScreenHeight;
+            double winHeight = ActualHeight > 0 ? ActualHeight : 140;
+
+            double visibleTop = screenHeightDip - winHeight - 8;
+            double hiddenTop = screenHeightDip - 4; // subtle 4px touch trigger at bottom
+
+            double targetTop = show ? visibleTop : hiddenTop;
 
             var anim = new DoubleAnimation
             {
                 To = targetTop,
-                Duration = TimeSpan.FromMilliseconds(200),
+                Duration = TimeSpan.FromMilliseconds(180),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
             };
 
@@ -324,18 +391,22 @@ namespace WinDock.Views
                     minimizeItem.Click += (s, ev) => WindowHelper.MinimizeWindow(item.WindowHandle);
                     menu.Items.Add(minimizeItem);
 
+                    var closeItem = new MenuItem { Header = "Close Window" };
+                    closeItem.Click += (s, ev) => WindowHelper.CloseWindow(item.WindowHandle);
+                    menu.Items.Add(closeItem);
+
                     menu.Items.Add(new Separator());
                 }
 
                 if (item.IsPinned)
                 {
-                    var unpinItem = new MenuItem { Header = "Unpin from Dock" };
+                    var unpinItem = new MenuItem { Header = "📌 Unpin from Dock" };
                     unpinItem.Click += (s, ev) => _dockManager?.UnpinItem(item);
                     menu.Items.Add(unpinItem);
                 }
                 else
                 {
-                    var pinItem = new MenuItem { Header = "Pin to Dock" };
+                    var pinItem = new MenuItem { Header = "📌 Keep in Dock (Pin)" };
                     pinItem.Click += (s, ev) =>
                     {
                         if (!string.IsNullOrEmpty(item.LaunchPath))
@@ -346,78 +417,53 @@ namespace WinDock.Views
                     menu.Items.Add(pinItem);
                 }
 
-                if (!string.IsNullOrEmpty(item.LaunchPath))
-                {
-                    var adminItem = new MenuItem { Header = "Run as Administrator" };
-                    adminItem.Click += (s, ev) => DockManager.LaunchProcess(item.LaunchPath, true);
-                    menu.Items.Add(adminItem);
-                }
-
-                if (item.IsRunning && item.WindowHandle != IntPtr.Zero)
-                {
-                    menu.Items.Add(new Separator());
-                    var closeItem = new MenuItem { Header = "Close Window" };
-                    closeItem.Click += (s, ev) => WindowHelper.CloseWindow(item.WindowHandle);
-                    menu.Items.Add(closeItem);
-                }
-
                 menu.IsOpen = true;
             }
-        }
-
-        private void OnItemMouseEnter(object sender, MouseEventArgs e)
-        {
-        }
-
-        private void OnItemMouseLeave(object sender, MouseEventArgs e)
-        {
         }
 
         private void OnDockItemsMouseMove(object sender, MouseEventArgs e)
         {
             if (_dockManager == null) return;
+
             var settings = _settingsService.CurrentSettings;
             double maxScale = settings.MagnificationScale;
-
-            Point mousePos = e.GetPosition(DockItemsControl);
-            double spread = settings.IconSize * 2.2;
+            Point mousePosInRoot = e.GetPosition(RootGrid);
 
             DockItem? closestItem = null;
             double minDistance = double.MaxValue;
             Point closestItemPosInRoot = new Point(0, 0);
 
-            for (int i = 0; i < DockItemsControl.Items.Count; i++)
+            // Magnify across both Pinned and Running items
+            foreach (var item in _dockManager.AllItems)
             {
-                if (DockItemsControl.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement container)
-                {
-                    Point itemCenterInDock = container.TranslatePoint(
-                        new Point(container.ActualWidth / 2, container.ActualHeight / 2),
-                        DockItemsControl);
+                FrameworkElement? container = null;
 
-                    double dist = Math.Abs(mousePos.X - itemCenterInDock.X);
+                if (PinnedItemsControl.ItemContainerGenerator.ContainerFromItem(item) is FrameworkElement pElem)
+                    container = pElem;
+                else if (RunningItemsControl.ItemContainerGenerator.ContainerFromItem(item) is FrameworkElement rElem)
+                    container = rElem;
+
+                if (container != null)
+                {
+                    Point itemPosInRoot = container.TranslatePoint(new Point(container.ActualWidth / 2, container.ActualHeight / 2), RootGrid);
+                    double dist = Math.Abs(mousePosInRoot.X - itemPosInRoot.X);
+                    double spread = settings.IconSize * 2.2;
 
                     if (dist < minDistance)
                     {
                         minDistance = dist;
-                        closestItem = DockItemsControl.Items[i] as DockItem;
-                        closestItemPosInRoot = container.TranslatePoint(new Point(container.ActualWidth / 2, 0), RootGrid);
+                        closestItem = item;
+                        closestItemPosInRoot = itemPosInRoot;
                     }
 
                     if (maxScale > 1.01 && dist < spread)
                     {
                         double factor = Math.Cos((dist / spread) * (Math.PI / 2));
-                        double targetScale = 1.0 + (maxScale - 1.0) * factor;
-                        if (DockItemsControl.Items[i] is DockItem item)
-                        {
-                            item.Scale = targetScale;
-                        }
+                        item.Scale = 1.0 + (maxScale - 1.0) * factor;
                     }
                     else
                     {
-                        if (DockItemsControl.Items[i] is DockItem item)
-                        {
-                            item.Scale = 1.0;
-                        }
+                        item.Scale = 1.0;
                     }
                 }
             }
@@ -476,101 +522,36 @@ namespace WinDock.Views
             _appListWindow?.Toggle();
         }
 
-        private void OnToggleWindowsTaskbarClicked(object sender, RoutedEventArgs e)
+        private void OnNetworkClicked(object sender, RoutedEventArgs e)
         {
-            TaskbarController.ToggleTaskbar();
-            bool isHidden = TaskbarController.IsTaskbarHidden;
-            UpdateTaskbarIndicator(isHidden);
-
-            if (isHidden)
-            {
-                if (_settingsService.CurrentSettings.ReserveScreenSpace)
-                {
-                    WorkAreaHelper.SetReservedWorkArea((int)_settingsService.CurrentSettings.IconSize + 20);
-                }
-                else
-                {
-                    WorkAreaHelper.SetFullScreenWorkArea();
-                }
-            }
-            else
-            {
-                WorkAreaHelper.RestoreOriginalWorkArea();
-            }
+            NetworkHelper.OpenNetworkSettings();
         }
 
-        private void OnSpotlightClicked(object sender, RoutedEventArgs e)
+        private void OnVolumeClicked(object sender, RoutedEventArgs e)
         {
-            _spotlightWindow?.Toggle();
+            AudioHelper.ToggleMute();
+            UpdateSystemStatus();
         }
 
-        private void OnToggleNotchClicked(object sender, RoutedEventArgs e)
+        private void OnVolumeMouseWheel(object sender, MouseWheelEventArgs e)
         {
-            if (_notchWindow == null)
-            {
-                _notchWindow = new NotchWindow();
-                _notchWindow.RequestPinToDock += path => _dockManager?.PinApplication(path);
-                _notchWindow.Show();
-            }
-            else
-            {
-                if (_notchWindow.IsVisible)
-                {
-                    _notchWindow.Hide();
-                }
-                else
-                {
-                    _notchWindow.Show();
-                    _notchWindow.PositionAtTopCenter();
-                }
-            }
+            AudioHelper.VolumeStep(e.Delta > 0);
+            UpdateSystemStatus();
+            e.Handled = true;
         }
 
         private void OnClockClicked(object sender, RoutedEventArgs e)
         {
             try
             {
-                // Open Windows Date & Time Settings
                 Process.Start(new ProcessStartInfo { FileName = "ms-settings:dateandtime", UseShellExecute = true });
             }
-            catch
-            {
-                // Ignore
-            }
+            catch { }
         }
 
-        private void OnSettingsClicked(object sender, RoutedEventArgs e)
+        private void OnShowDesktopClicked(object sender, RoutedEventArgs e)
         {
-            var settingsWindow = new SettingsWindow();
-            settingsWindow.Owner = this;
-            if (settingsWindow.ShowDialog() == true)
-            {
-                // Reload settings
-                var current = _settingsService.CurrentSettings;
-                if (current.HideWindowsTaskbar && !TaskbarController.IsTaskbarHidden)
-                {
-                    TaskbarController.HideTaskbar();
-                    UpdateTaskbarIndicator(true);
-                }
-                else if (!current.HideWindowsTaskbar && TaskbarController.IsTaskbarHidden)
-                {
-                    TaskbarController.ShowTaskbar();
-                    UpdateTaskbarIndicator(false);
-                }
-
-                if (current.ReserveScreenSpace && _appBarHelper == null)
-                {
-                    _appBarHelper = new AppBarHelper(_hwnd);
-                    _appBarHelper.Register(NativeMethods.ABE_BOTTOM, 75);
-                }
-                else if (!current.ReserveScreenSpace && _appBarHelper != null)
-                {
-                    _appBarHelper.Unregister();
-                    _appBarHelper = null;
-                }
-
-                _dockManager?.RefreshWindows();
-            }
+            WindowHelper.ToggleShowDesktop();
         }
 
         private void OnDockMouseEnter(object sender, MouseEventArgs e)
@@ -581,7 +562,7 @@ namespace WinDock.Views
         {
             if (_dockManager != null)
             {
-                foreach (var item in _dockManager.DockItems)
+                foreach (var item in _dockManager.AllItems)
                 {
                     item.Scale = 1.0;
                 }
@@ -632,7 +613,10 @@ namespace WinDock.Views
             WorkAreaHelper.RestoreOriginalWorkArea();
             TaskbarController.ShowTaskbar();
 
-            _appBarHelper?.Unregister();
+            _clockTimer?.Stop();
+            _statusTimer?.Stop();
+            _autoHideTimer?.Stop();
+
             _shellHook?.Dispose();
             _hotKeyHelper?.Dispose();
             _notchWindow?.Close();

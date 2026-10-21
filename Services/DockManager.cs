@@ -1,43 +1,59 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using WinDock.Models;
 using WinDock.Native;
 
 namespace WinDock.Services
 {
-    public class DockManager
+    public class DockManager : INotifyPropertyChanged
     {
         private readonly IntPtr _dockHwnd;
         private readonly SettingsService _settingsService;
-        private readonly ObservableCollection<DockItem> _dockItems = new();
-        private readonly Dictionary<IntPtr, DockItem> _windowMap = new();
+        private readonly ObservableCollection<DockItem> _pinnedItems = new();
+        private readonly ObservableCollection<DockItem> _runningItems = new();
 
-        public ObservableCollection<DockItem> DockItems => _dockItems;
+        public ObservableCollection<DockItem> PinnedItems => _pinnedItems;
+        public ObservableCollection<DockItem> RunningItems => _runningItems;
+
+        public bool HasRunningItems => _runningItems.Count > 0;
+
+        public IEnumerable<DockItem> AllItems => _pinnedItems.Concat(_runningItems);
+        public IEnumerable<DockItem> DockItems => AllItems;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         public DockManager(IntPtr dockHwnd)
         {
             _dockHwnd = dockHwnd;
             _settingsService = SettingsService.Instance;
 
+            _runningItems.CollectionChanged += (s, e) =>
+            {
+                OnPropertyChanged(nameof(HasRunningItems));
+            };
+
             InitializePinnedItems();
         }
 
-        private void InitializePinnedItems()
+        public void InitializePinnedItems()
         {
-            _dockItems.Clear();
+            _pinnedItems.Clear();
 
             foreach (var pin in _settingsService.CurrentSettings.PinnedApps)
             {
+                string resolved = WindowHelper.ResolveExecutablePath(pin.LaunchPath);
                 var item = new DockItem
                 {
                     Title = pin.Title,
                     ProcessName = pin.ProcessName,
-                    LaunchPath = pin.LaunchPath,
+                    LaunchPath = resolved,
                     IsPinned = true,
                     IsRunning = false,
                     IsActive = false,
@@ -45,14 +61,14 @@ namespace WinDock.Services
                     IconSize = _settingsService.CurrentSettings.IconSize
                 };
 
-                // Extract Icon from path or executable
-                item.Icon = WindowHelper.GetWindowIcon(IntPtr.Zero, pin.LaunchPath);
-                _dockItems.Add(item);
+                // Extract High-Res Icon from resolved path
+                item.Icon = WindowHelper.GetWindowIcon(IntPtr.Zero, resolved, pin.Title);
+                _pinnedItems.Add(item);
             }
         }
 
         /// <summary>
-        /// Scans all active top-level windows and populates running state.
+        /// Scans all active top-level windows and populates running states for pinned and unpinned apps.
         /// </summary>
         public void RefreshWindows()
         {
@@ -72,8 +88,8 @@ namespace WinDock.Services
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                // Reset running states for pinned items
-                foreach (var pin in _dockItems.Where(i => i.IsPinned))
+                // 1. Reset running states for pinned items
+                foreach (var pin in _pinnedItems)
                 {
                     pin.IsRunning = false;
                     pin.IsActive = false;
@@ -81,17 +97,16 @@ namespace WinDock.Services
                     pin.WindowHandle = IntPtr.Zero;
                 }
 
-                var currentUnpinned = _dockItems.Where(i => !i.IsPinned).ToList();
+                var currentUnpinned = _runningItems.ToList();
                 var matchedUnpinned = new HashSet<DockItem>();
 
                 foreach (var win in discoveredWindows)
                 {
                     // Check if window matches any pinned item
-                    var pinnedItem = _dockItems.FirstOrDefault(i =>
-                        i.IsPinned &&
-                        (string.Equals(i.ProcessName, win.ProcName, StringComparison.OrdinalIgnoreCase) ||
-                         (!string.IsNullOrEmpty(i.LaunchPath) && !string.IsNullOrEmpty(win.ExePath) &&
-                          string.Equals(Path.GetFileName(i.LaunchPath), Path.GetFileName(win.ExePath), StringComparison.OrdinalIgnoreCase))));
+                    var pinnedItem = _pinnedItems.FirstOrDefault(i =>
+                        (string.Equals(i.ProcessName, win.ProcName, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrEmpty(i.LaunchPath) && !string.IsNullOrEmpty(win.ExePath) &&
+                         string.Equals(Path.GetFileName(i.LaunchPath), Path.GetFileName(win.ExePath), StringComparison.OrdinalIgnoreCase)));
 
                     if (pinnedItem != null)
                     {
@@ -105,14 +120,16 @@ namespace WinDock.Services
 
                         if (pinnedItem.Icon == null)
                         {
-                            pinnedItem.Icon = WindowHelper.GetWindowIcon(win.Hwnd, win.ExePath);
+                            pinnedItem.Icon = WindowHelper.GetWindowIcon(win.Hwnd, win.ExePath, pinnedItem.Title);
                         }
                     }
                     else
                     {
-                        // Check if unpinned item already exists for this process
+                        // Check if unpinned running item already exists for this process
                         var existing = currentUnpinned.FirstOrDefault(i =>
-                            string.Equals(i.ProcessName, win.ProcName, StringComparison.OrdinalIgnoreCase));
+                            string.Equals(i.ProcessName, win.ProcName, StringComparison.OrdinalIgnoreCase) ||
+                            (!string.IsNullOrEmpty(i.LaunchPath) && !string.IsNullOrEmpty(win.ExePath) &&
+                             string.Equals(Path.GetFileName(i.LaunchPath), Path.GetFileName(win.ExePath), StringComparison.OrdinalIgnoreCase)));
 
                         if (existing != null)
                         {
@@ -128,9 +145,10 @@ namespace WinDock.Services
                         else
                         {
                             // New running application!
+                            string displayTitle = !string.IsNullOrWhiteSpace(win.Title) ? win.Title : win.ProcName;
                             var newItem = new DockItem
                             {
-                                Title = string.IsNullOrWhiteSpace(win.Title) ? win.ProcName : win.Title,
+                                Title = displayTitle,
                                 ProcessName = win.ProcName,
                                 LaunchPath = win.ExePath,
                                 WindowHandle = win.Hwnd,
@@ -139,10 +157,10 @@ namespace WinDock.Services
                                 IsActive = (win.Hwnd == activeHwnd),
                                 WindowCount = 1,
                                 IconSize = _settingsService.CurrentSettings.IconSize,
-                                Icon = WindowHelper.GetWindowIcon(win.Hwnd, win.ExePath)
+                                Icon = WindowHelper.GetWindowIcon(win.Hwnd, win.ExePath, displayTitle)
                             };
 
-                            _dockItems.Add(newItem);
+                            _runningItems.Add(newItem);
                             matchedUnpinned.Add(newItem);
                         }
                     }
@@ -153,9 +171,11 @@ namespace WinDock.Services
                 {
                     if (!matchedUnpinned.Contains(unpinned))
                     {
-                        _dockItems.Remove(unpinned);
+                        _runningItems.Remove(unpinned);
                     }
                 }
+
+                OnPropertyChanged(nameof(HasRunningItems));
             });
         }
 
@@ -174,7 +194,7 @@ namespace WinDock.Services
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
-                foreach (var item in _dockItems)
+                foreach (var item in AllItems)
                 {
                     item.IsActive = (item.WindowHandle == hWnd);
                 }
@@ -242,11 +262,12 @@ namespace WinDock.Services
         /// </summary>
         public void PinApplication(string filePath)
         {
-            string resolvedPath = ShortcutHelper.ResolveShortcut(filePath);
+            string resolvedPath = WindowHelper.ResolveExecutablePath(filePath);
             string title = Path.GetFileNameWithoutExtension(filePath);
             string procName = Path.GetFileNameWithoutExtension(resolvedPath);
 
-            var existing = _dockItems.FirstOrDefault(i =>
+            // Check if already in pinned
+            var existing = _pinnedItems.FirstOrDefault(i =>
                 string.Equals(i.LaunchPath, resolvedPath, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(i.ProcessName, procName, StringComparison.OrdinalIgnoreCase));
 
@@ -256,20 +277,35 @@ namespace WinDock.Services
             }
             else
             {
-                var newItem = new DockItem
+                // Check if currently running in unpinned list
+                var running = _runningItems.FirstOrDefault(i =>
+                    string.Equals(i.LaunchPath, resolvedPath, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(i.ProcessName, procName, StringComparison.OrdinalIgnoreCase));
+
+                if (running != null)
                 {
-                    Title = title,
-                    ProcessName = procName,
-                    LaunchPath = resolvedPath,
-                    IsPinned = true,
-                    IsRunning = false,
-                    IconSize = _settingsService.CurrentSettings.IconSize,
-                    Icon = WindowHelper.GetWindowIcon(IntPtr.Zero, resolvedPath)
-                };
-                _dockItems.Add(newItem);
+                    _runningItems.Remove(running);
+                    running.IsPinned = true;
+                    _pinnedItems.Add(running);
+                }
+                else
+                {
+                    var newItem = new DockItem
+                    {
+                        Title = title,
+                        ProcessName = procName,
+                        LaunchPath = resolvedPath,
+                        IsPinned = true,
+                        IsRunning = false,
+                        IconSize = _settingsService.CurrentSettings.IconSize,
+                        Icon = WindowHelper.GetWindowIcon(IntPtr.Zero, resolvedPath, title)
+                    };
+                    _pinnedItems.Add(newItem);
+                }
             }
 
             SavePinnedState();
+            OnPropertyChanged(nameof(HasRunningItems));
         }
 
         /// <summary>
@@ -278,17 +314,20 @@ namespace WinDock.Services
         public void UnpinItem(DockItem item)
         {
             item.IsPinned = false;
-            if (!item.IsRunning)
+            _pinnedItems.Remove(item);
+
+            if (item.IsRunning)
             {
-                _dockItems.Remove(item);
+                _runningItems.Add(item);
             }
 
             SavePinnedState();
+            OnPropertyChanged(nameof(HasRunningItems));
         }
 
         private void SavePinnedState()
         {
-            var pinnedConfigs = _dockItems
+            var pinnedConfigs = _pinnedItems
                 .Where(i => i.IsPinned)
                 .Select(i => new PinnedAppConfig
                 {
@@ -301,6 +340,11 @@ namespace WinDock.Services
             var current = _settingsService.CurrentSettings;
             current.PinnedApps = pinnedConfigs;
             _settingsService.SaveSettings(current);
+        }
+
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

@@ -10,8 +10,7 @@ namespace WinDock.Views
     {
         private readonly SettingsService _settingsService = SettingsService.Instance;
         private bool _isLoaded = false;
-        private int _currentStep = 1;
-
+        
         public SetupWizardWindow()
         {
             InitializeComponent();
@@ -41,7 +40,6 @@ namespace WinDock.Views
 
         private void OnNextClicked(object sender, RoutedEventArgs e)
         {
-            _currentStep = 2;
             Page1.Visibility = Visibility.Collapsed;
             Page2.Visibility = Visibility.Visible;
 
@@ -53,7 +51,6 @@ namespace WinDock.Views
 
         private void OnBackClicked(object sender, RoutedEventArgs e)
         {
-            _currentStep = 1;
             Page2.Visibility = Visibility.Collapsed;
             Page1.Visibility = Visibility.Visible;
 

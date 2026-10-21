@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms;
+using Screen = System.Windows.Forms.Screen;
 using System.Windows.Input;
 using WinDock.Models;
 using WinDock.Native;
@@ -164,7 +164,7 @@ namespace WinDock.Views
 
         private void OnPowerDropdownClicked(object sender, RoutedEventArgs e)
         {
-            if (sender is Button btn && btn.ContextMenu != null)
+            if (sender is System.Windows.Controls.Button btn && btn.ContextMenu != null)
             {
                 btn.ContextMenu.PlacementTarget = btn;
                 btn.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Top;

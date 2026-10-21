@@ -162,6 +162,16 @@ namespace WinDock.Views
         }
 
 
+        private void OnPowerDropdownClicked(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.ContextMenu != null)
+            {
+                btn.ContextMenu.PlacementTarget = btn;
+                btn.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Top;
+                btn.ContextMenu.IsOpen = true;
+            }
+        }
+
         private void OnLockClicked(object sender, RoutedEventArgs e)
         {
             Hide();

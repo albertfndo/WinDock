@@ -53,6 +53,70 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Dark Glass Power Context Menu Style -->
+        <Style x:Key="PowerContextMenuStyle" TargetType="ContextMenu">
+            <Setter Property="Background" Value="#F81E293B" />
+            <Setter Property="BorderBrush" Value="#40FFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="#F1F5F9" />
+            <Setter Property="Padding" Value="5" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="12"
+                                Padding="{TemplateBinding Padding}">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="24" Color="#000000" Opacity="0.75" Direction="270" ShadowDepth="4" />
+                            </Border.Effect>
+                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PowerMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="#F1F5F9" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="mBorder"
+                                Background="Transparent"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}"
+                                Margin="2,1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0" ContentSource="Icon" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                                <ContentPresenter Grid.Column="1" ContentSource="Header" VerticalAlignment="Center" Margin="6,0,0,0" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="mBorder" Property="Background" Value="#2563EB" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PowerMenuSeparatorStyle" TargetType="Separator">
+            <Setter Property="Background" Value="#25FFFFFF" />
+            <Setter Property="Margin" Value="6,4" />
+            <Setter Property="Height" Value="1" />
+        </Style>
     </Window.Resources>
 
     <!-- Main Container -->
@@ -250,52 +314,45 @@
                     </Button>
                 </StackPanel>
 
-                <!-- Right Power Action Buttons -->
+                <!-- Right: Unified Power Dropdown Button (Sleep, Lock, Restart, Shut Down) -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <!-- Lock Screen -->
-                    <Button Style="{StaticResource PowerButtonStyle}"
-                            Click="OnLockClicked"
-                            ToolTip="Lock Windows Workstation"
-                            Margin="0,0,6,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🔒" FontSize="11" Margin="0,0,4,0" />
-                            <TextBlock Text="Lock" />
+                    <Button x:Name="BtnPowerDropdown"
+                            Style="{StaticResource PowerButtonStyle}"
+                            Click="OnPowerDropdownClicked"
+                            ToolTip="Power Options (Sleep, Lock, Restart, Shut Down)"
+                            Padding="12,6">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="⏻" FontSize="12.5" Foreground="#F87171" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Power" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Text=" ▴" FontSize="8.5" Foreground="#94A3B8" Margin="4,0,0,0" VerticalAlignment="Center" />
                         </StackPanel>
-                    </Button>
-
-                    <!-- Sleep Mode -->
-                    <Button Style="{StaticResource PowerButtonStyle}"
-                            Click="OnSleepClicked"
-                            ToolTip="Put Windows to Sleep (Suspend)"
-                            Margin="0,0,6,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🌙" FontSize="11" Margin="0,0,4,0" />
-                            <TextBlock Text="Sleep" />
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Restart PC -->
-                    <Button Style="{StaticResource PowerButtonStyle}"
-                            Click="OnRestartClicked"
-                            ToolTip="Restart Windows Computer"
-                            Margin="0,0,6,0">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🔄" FontSize="11" Margin="0,0,4,0" />
-                            <TextBlock Text="Restart" />
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Shutdown PC -->
-                    <Button Style="{StaticResource PowerButtonStyle}"
-                            Click="OnShutdownClicked"
-                            Background="#30EF4444"
-                            BorderBrush="#50EF4444"
-                            Foreground="#FCA5A5"
-                            ToolTip="Shut Down Windows Computer">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⏻" FontSize="11" FontWeight="Bold" Margin="0,0,4,0" />
-                            <TextBlock Text="Shut Down" />
-                        </StackPanel>
+                        <Button.ContextMenu>
+                            <ContextMenu x:Name="PowerContextMenu"
+                                         Style="{StaticResource PowerContextMenuStyle}"
+                                         Placement="Top">
+                                <MenuItem Header="Lock Screen" Click="OnLockClicked" Style="{StaticResource PowerMenuItemStyle}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="🔒" FontSize="13" VerticalAlignment="Center" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="Sleep" Click="OnSleepClicked" Style="{StaticResource PowerMenuItemStyle}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="🌙" FontSize="13" VerticalAlignment="Center" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="Restart..." Click="OnRestartClicked" Style="{StaticResource PowerMenuItemStyle}">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="🔄" FontSize="13" VerticalAlignment="Center" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <Separator Style="{StaticResource PowerMenuSeparatorStyle}" />
+                                <MenuItem Header="Shut Down..." Click="OnShutdownClicked" Style="{StaticResource PowerMenuItemStyle}" Foreground="#FCA5A5">
+                                    <MenuItem.Icon>
+                                        <TextBlock Text="⏻" FontSize="13" Foreground="#EF4444" FontWeight="Bold" VerticalAlignment="Center" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </Button.ContextMenu>
                     </Button>
                 </StackPanel>
             </Grid>

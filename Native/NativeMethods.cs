@@ -65,6 +65,9 @@ namespace WinDock.Native
 
         // DWM Cloaked attribute
         public const int DWMWA_CLOAKED = 14;
+        public const int DWM_CLOAKED_APP = 0x00000001;
+        public const int DWM_CLOAKED_SHELL = 0x00000002;
+        public const int DWM_CLOAKED_INHERITED = 0x00000004;
         public const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
         public const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
 

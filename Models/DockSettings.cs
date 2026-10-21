@@ -24,7 +24,7 @@ namespace WinDock.Models
         public string DockTint { get; set; } = "#4B5563"; // Elegant slate/gray background as seen in user screenshot
         public string Theme { get; set; } = "DarkGlass"; // DarkGlass, LightGlass, OLED, Cyberpunk
         public string AccentColor { get; set; } = "#3B82F6"; // Electric Blue
-        public bool LaunchAtStartup { get; set; } = false;
+        public bool LaunchAtStartup { get; set; } = true;
 
         public List<PinnedAppConfig> PinnedApps { get; set; } = new()
         {

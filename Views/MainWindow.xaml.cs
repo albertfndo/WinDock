@@ -108,6 +108,7 @@ namespace WinDock.Views
             _appListWindow = new AppListWindow();
             _appListWindow.AttachDockManager(_dockManager!);
             _appListWindow.RequestPinToDock += path => _dockManager?.PinApplication(path);
+            _appListWindow.RequestToggleNotch += ToggleNotch;
 
             // 9. Setup Global Hotkeys:
             //    - Win + Alt + D: Toggle Taskbar
@@ -520,6 +521,33 @@ namespace WinDock.Views
         private void OnStartButtonClicked(object sender, RoutedEventArgs e)
         {
             _appListWindow?.Toggle();
+        }
+
+        private void OnToggleNotchClicked(object sender, RoutedEventArgs e)
+        {
+            ToggleNotch();
+        }
+
+        public void ToggleNotch()
+        {
+            if (_notchWindow == null)
+            {
+                _notchWindow = new NotchWindow();
+                _notchWindow.RequestPinToDock += path => _dockManager?.PinApplication(path);
+                _notchWindow.Show();
+            }
+            else
+            {
+                if (_notchWindow.IsVisible)
+                {
+                    _notchWindow.Hide();
+                }
+                else
+                {
+                    _notchWindow.Show();
+                    _notchWindow.PositionAtTopCenter();
+                }
+            }
         }
 
         private void OnNetworkClicked(object sender, RoutedEventArgs e)

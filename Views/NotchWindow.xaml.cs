@@ -47,11 +47,32 @@ namespace WinDock.Views
 
         public void PositionAtTopCenter()
         {
-            Screen primaryScreen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
-            var bounds = primaryScreen.Bounds;
+            double screenWidth = SystemParameters.PrimaryScreenWidth;
+            Left = (screenWidth - Width) / 2;
+            Top = 0;
+        }
 
-            Left = bounds.Left + (bounds.Width - Width) / 2;
-            Top = bounds.Top;
+        private void OnHideNotchClicked(object sender, RoutedEventArgs e)
+        {
+            Hide();
+        }
+
+        private void OnNotchRightClick(object sender, MouseButtonEventArgs e)
+        {
+            var menu = new System.Windows.Controls.ContextMenu();
+            var hideItem = new System.Windows.Controls.MenuItem { Header = "✕ Hide Dynamic Drop Notch" };
+            hideItem.Click += (s, ev) => Hide();
+            menu.Items.Add(hideItem);
+
+            if (_items.Count > 0)
+            {
+                var clearItem = new System.Windows.Controls.MenuItem { Header = "🗑 Clear All Items" };
+                clearItem.Click += (s, ev) => OnClearAllClicked(sender, new RoutedEventArgs());
+                menu.Items.Add(clearItem);
+            }
+
+            menu.IsOpen = true;
+            e.Handled = true;
         }
 
         private void ExpandNotch()

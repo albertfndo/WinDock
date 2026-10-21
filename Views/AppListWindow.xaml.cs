@@ -21,6 +21,7 @@ namespace WinDock.Views
         private List<SpotlightItem> _allApps = new();
 
         public event Action<string>? RequestPinToDock;
+        public event Action? RequestToggleNotch;
 
         public AppListWindow()
         {
@@ -152,6 +153,12 @@ namespace WinDock.Views
         {
             Hide();
             WindowHelper.ToggleShowDesktop();
+        }
+
+        private void OnNotchClicked(object sender, RoutedEventArgs e)
+        {
+            Hide();
+            RequestToggleNotch?.Invoke();
         }
 
 

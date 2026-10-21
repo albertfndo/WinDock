@@ -41,6 +41,12 @@ namespace WinDock
                 TaskbarController.ShowTaskbar();
             };
 
+            // 3. Ensure Startup Registry is configured if enabled
+            if (WinDock.Services.SettingsService.Instance.CurrentSettings.LaunchAtStartup)
+            {
+                WinDock.Services.StartupService.SetStartup(true);
+            }
+
             base.OnStartup(e);
         }
 

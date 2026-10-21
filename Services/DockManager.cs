@@ -105,6 +105,7 @@ namespace WinDock.Services
                     // Check if window matches any pinned item
                     var pinnedItem = _pinnedItems.FirstOrDefault(i =>
                         (string.Equals(i.ProcessName, win.ProcName, StringComparison.OrdinalIgnoreCase)) ||
+                        (string.Equals(i.Title, win.Title, StringComparison.OrdinalIgnoreCase)) ||
                         (!string.IsNullOrEmpty(i.LaunchPath) && !string.IsNullOrEmpty(win.ExePath) &&
                          string.Equals(Path.GetFileName(i.LaunchPath), Path.GetFileName(win.ExePath), StringComparison.OrdinalIgnoreCase)));
 
@@ -125,11 +126,11 @@ namespace WinDock.Services
                     }
                     else
                     {
-                        // Check if unpinned running item already exists for this process
+                        // Check if unpinned running item already exists for this process or window handle
                         var existing = currentUnpinned.FirstOrDefault(i =>
-                            string.Equals(i.ProcessName, win.ProcName, StringComparison.OrdinalIgnoreCase) ||
-                            (!string.IsNullOrEmpty(i.LaunchPath) && !string.IsNullOrEmpty(win.ExePath) &&
-                             string.Equals(Path.GetFileName(i.LaunchPath), Path.GetFileName(win.ExePath), StringComparison.OrdinalIgnoreCase)));
+                            i.WindowHandle == win.Hwnd ||
+                            (string.Equals(i.ProcessName, win.ProcName, StringComparison.OrdinalIgnoreCase) &&
+                             string.Equals(i.Title, win.Title, StringComparison.OrdinalIgnoreCase)));
 
                         if (existing != null)
                         {

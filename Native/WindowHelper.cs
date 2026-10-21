@@ -13,7 +13,6 @@ using System.Windows.Media.Imaging;
 using Color = System.Windows.Media.Color;
 using FontFamily = System.Windows.Media.FontFamily;
 using Point = System.Windows.Point;
-using Size = System.Windows.Size;
 
 namespace WinDock.Native
 {
@@ -23,37 +22,50 @@ namespace WinDock.Native
 
         /// <summary>
         /// Determines if the given window handle is a valid, user-facing application window (like Alt-Tab).
+        /// Supports normal Win32 apps and modern Windows 10/11 UWP apps (WhatsApp, Settings, etc.).
         /// </summary>
         public static bool IsAltTabWindow(IntPtr hWnd, IntPtr dockHwnd)
         {
             if (hWnd == IntPtr.Zero || hWnd == dockHwnd) return false;
-            if (!NativeMethods.IsWindow(hWnd) || !NativeMethods.IsWindowVisible(hWnd)) return false;
+            if (!NativeMethods.IsWindow(hWnd)) return false;
 
-            // Ignore Taskbar and Program Manager
+            // Must be visible OR iconic (minimized)
+            bool isVisible = NativeMethods.IsWindowVisible(hWnd);
+            bool isIconic = NativeMethods.IsIconic(hWnd);
+            if (!isVisible && !isIconic) return false;
+
+            // Window title check
+            string title = GetWindowTitle(hWnd);
+            if (string.IsNullOrWhiteSpace(title)) return false;
+
+            // Exclude Windows Shell, Desktop, and background host windows
             StringBuilder className = new StringBuilder(256);
-            NativeMethods.GetWindowText(hWnd, className, 256);
-            if (className.Length == 0) return false;
+            NativeMethods.GetClassName(hWnd, className, 256);
+            string cls = className.ToString();
 
-            // Check Extended Window Styles
+            if (cls == "Shell_TrayWnd" ||
+                cls == "Shell_SecondaryTrayWnd" ||
+                cls == "Progman" ||
+                cls == "WorkerW" ||
+                cls == "Windows.UI.Core.CoreWindow")
+            {
+                return false;
+            }
+
+            // Check Extended Window Styles: exclude ToolWindows unless AppWindow is explicitly set
             int exStyle = (int)NativeMethods.GetWindowLongPtr(hWnd, NativeMethods.GWL_EXSTYLE);
             if ((exStyle & NativeMethods.WS_EX_TOOLWINDOW) != 0 && (exStyle & NativeMethods.WS_EX_APPWINDOW) == 0)
             {
                 return false;
             }
 
-            // Exclude cloaked windows (Windows 10/11 UWP apps running in background or on other virtual desktops)
+            // Exclude cloaked windows ONLY if cloaked by another virtual desktop (DWM_CLOAKED_INHERITED = 4)
+            // Do NOT exclude minimized or background UWP apps (WhatsApp, Settings) where cloaked is 1 or 2!
             int cloaked = 0;
             int hr = NativeMethods.DwmGetWindowAttribute(hWnd, NativeMethods.DWMWA_CLOAKED, out cloaked, sizeof(int));
-            if (hr == 0 && cloaked != 0)
+            if (hr == 0 && (cloaked & NativeMethods.DWM_CLOAKED_INHERITED) != 0)
             {
                 return false;
-            }
-
-            // Check if window has zero size
-            if (NativeMethods.GetWindowRect(hWnd, out NativeMethods.RECT rect))
-            {
-                if (rect.Width <= 0 || rect.Height <= 0)
-                    return false;
             }
 
             return true;
@@ -74,6 +86,7 @@ namespace WinDock.Native
 
         /// <summary>
         /// Gets the process name and full executable path for the window.
+        /// Resolves UWP apps (WhatsApp, SystemSettings, etc.) hosted by ApplicationFrameHost to their real process!
         /// </summary>
         public static (string ProcessName, string? ExecutablePath) GetProcessInfo(IntPtr hWnd)
         {
@@ -89,9 +102,36 @@ namespace WinDock.Native
                 {
                     exePath = process.MainModule?.FileName;
                 }
-                catch
+                catch { }
+
+                // If this is ApplicationFrameHost (UWP host wrapper), find the real hosted UWP process!
+                if (string.Equals(procName, "ApplicationFrameHost", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Access denied for system processes
+                    IntPtr childCoreWindow = NativeMethods.FindWindowEx(hWnd, IntPtr.Zero, "Windows.UI.Core.CoreWindow", null);
+                    if (childCoreWindow != IntPtr.Zero)
+                    {
+                        NativeMethods.GetWindowThreadProcessId(childCoreWindow, out uint uwpPid);
+                        if (uwpPid != 0 && uwpPid != processId)
+                        {
+                            try
+                            {
+                                using Process uwpProc = Process.GetProcessById((int)uwpPid);
+                                procName = uwpProc.ProcessName;
+                                try { exePath = uwpProc.MainModule?.FileName; } catch { }
+                            }
+                            catch { }
+                        }
+                    }
+
+                    // If child window didn't yield a specific name, derive from window title (e.g. "WhatsApp", "Settings")
+                    if (string.Equals(procName, "ApplicationFrameHost", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string title = GetWindowTitle(hWnd);
+                        if (!string.IsNullOrWhiteSpace(title))
+                        {
+                            procName = title.Trim();
+                        }
+                    }
                 }
 
                 return (procName, exePath);
@@ -267,7 +307,7 @@ namespace WinDock.Native
                 }
             }
 
-            // 2. If no icon yet and we have a valid HWND, query process path or WM_GETICON
+            // 2. If no icon yet and we have a valid HWND, query real process path or WM_GETICON
             if (result == null && hWnd != IntPtr.Zero)
             {
                 var (_, exePath) = GetProcessInfo(hWnd);

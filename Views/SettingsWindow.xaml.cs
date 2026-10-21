@@ -28,6 +28,7 @@ namespace WinDock.Views
         private void LoadCurrentSettings()
         {
             var s = _settingsService.CurrentSettings;
+            ChkLaunchAtStartup.IsChecked = s.LaunchAtStartup;
             ChkHideTaskbar.IsChecked = s.HideWindowsTaskbar;
             ChkReserveSpace.IsChecked = s.ReserveScreenSpace;
             ChkAutoHide.IsChecked = s.AutoHideDock;
@@ -215,6 +216,8 @@ namespace WinDock.Views
         private void OnSaveClicked(object sender, RoutedEventArgs e)
         {
             var current = _settingsService.CurrentSettings;
+            current.LaunchAtStartup = ChkLaunchAtStartup.IsChecked == true;
+            StartupService.SetStartup(current.LaunchAtStartup);
             current.HideWindowsTaskbar = ChkHideTaskbar.IsChecked == true;
             current.ReserveScreenSpace = ChkReserveSpace.IsChecked == true;
             current.AutoHideDock = ChkAutoHide.IsChecked == true;

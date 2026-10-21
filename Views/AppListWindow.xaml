@@ -239,6 +239,15 @@
                             <TextBlock Text="Desktop" />
                         </StackPanel>
                     </Button>
+                    <Button Style="{StaticResource PowerButtonStyle}"
+                            Click="OnNotchClicked"
+                            ToolTip="Toggle Dynamic Drop Notch Shelf"
+                            Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="☁" FontSize="11" Margin="0,0,5,0" />
+                            <TextBlock Text="Notch" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
 
                 <!-- Right Power Action Buttons -->

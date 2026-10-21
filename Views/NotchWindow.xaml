@@ -71,7 +71,8 @@
                 BorderBrush="#44FFFFFF"
                 MouseEnter="OnNotchMouseEnter"
                 MouseLeave="OnNotchMouseLeave"
-                MouseLeftButtonDown="OnNotchMouseLeftButtonDown">
+                MouseLeftButtonDown="OnNotchMouseLeftButtonDown"
+                MouseRightButtonUp="OnNotchRightClick">
 
             <Border.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -133,23 +134,41 @@
                             <TextBlock Text=" • Drag items in or drag them out" Foreground="#94A3B8" FontSize="10" Margin="4,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
 
-                        <!-- Clear All button -->
-                        <Button HorizontalAlignment="Right"
-                                Content="Clear All"
-                                Click="OnClearAllClicked"
-                                Foreground="#F43F5E"
-                                Background="#20F43F5E"
-                                BorderBrush="#40F43F5E"
-                                BorderThickness="1"
-                                FontSize="10"
-                                Padding="8,2"
-                                Cursor="Hand">
-                            <Button.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="6" />
-                                </Style>
-                            </Button.Resources>
-                        </Button>
+                        <!-- Actions: Clear All and Hide -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Clear All"
+                                    Click="OnClearAllClicked"
+                                    Foreground="#F43F5E"
+                                    Background="#20F43F5E"
+                                    BorderBrush="#40F43F5E"
+                                    BorderThickness="1"
+                                    FontSize="10"
+                                    Padding="8,2"
+                                    Margin="0,0,6,0"
+                                    Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="6" />
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                            <Button Content="✕ Hide"
+                                    Click="OnHideNotchClicked"
+                                    ToolTip="Hide Dynamic Drop Notch"
+                                    Foreground="#CBD5E1"
+                                    Background="#20FFFFFF"
+                                    BorderBrush="#35FFFFFF"
+                                    BorderThickness="1"
+                                    FontSize="10"
+                                    Padding="8,2"
+                                    Cursor="Hand">
+                                <Button.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="6" />
+                                    </Style>
+                                </Button.Resources>
+                            </Button>
+                        </StackPanel>
                     </Grid>
 
                     <!-- Dropped Items List / Empty State -->

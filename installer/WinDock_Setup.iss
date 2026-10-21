@@ -29,7 +29,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
-Name: "startupicon"; Description: "Launch WinDock automatically when Windows starts"; GroupDescription: "Windows Startup:"
+Name: "startupicon"; Description: "Launch WinDock automatically when Windows starts"; GroupDescription: "Windows Startup:"; Flags: checkedonce
 
 [Files]
 Source: "..\publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
@@ -40,6 +40,9 @@ Source: "..\README.md"; DestDir: "{app}"; Flags: isreadme ignoreversion
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: startupicon
+
+[Registry]
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "WinDock"; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletevalue; Tasks: startupicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

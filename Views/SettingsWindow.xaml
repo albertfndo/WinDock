@@ -191,6 +191,11 @@
 
                     <Border Background="#1E293B" CornerRadius="10" Padding="14,8" Margin="0,0,0,14">
                         <StackPanel>
+                            <CheckBox x:Name="ChkLaunchAtStartup" Style="{StaticResource ModernToggle}"
+                                      Content="Start WinDock automatically with Windows (System Startup)" />
+                            <TextBlock Text="Launches WinDock seamlessly whenever you turn on or log into your PC."
+                                       Foreground="#64748B" FontSize="10" Margin="24,-2,0,6" />
+
                             <CheckBox x:Name="ChkHideTaskbar" Style="{StaticResource ModernToggle}"
                                       Content="Hide Windows Taskbar automatically when WinDock runs" />
                             <TextBlock Text="Replaces Windows taskbar with WinDock. Restores automatically when WinDock exits."

@@ -158,7 +158,6 @@
                         <Border x:Name="EmptyDropPlaceholder"
                                 BorderBrush="#33FFFFFF"
                                 BorderThickness="1"
-                                BorderDashArray="2,2"
                                 CornerRadius="8"
                                 Background="#10FFFFFF">
                             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">

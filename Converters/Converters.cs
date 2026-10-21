@@ -34,7 +34,8 @@ namespace WinDock.Converters
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             bool isNull = (value == null);
-            if (Invert) isNull = !isNull;
+            bool invert = Invert || (parameter is string s && s.Equals("invert", StringComparison.OrdinalIgnoreCase));
+            if (invert) isNull = !isNull;
             return isNull ? Visibility.Collapsed : Visibility.Visible;
         }
 

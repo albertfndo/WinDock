@@ -18,7 +18,7 @@ namespace WinDock.Native
         [Guid("000214F9-0000-0000-C000-000000000046")]
         internal interface IShellLinkW
         {
-            void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile, int cchMaxPath, out IntPtr pfd, uint fFlags);
+            void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile, int cchMaxPath, IntPtr pfd, uint fFlags);
             void GetIDList(out IntPtr ppidl);
             void SetIDList(IntPtr pidl);
             void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszName, int cchMaxName);
@@ -74,7 +74,7 @@ namespace WinDock.Native
                 file.Load(lnkPath, 0);
 
                 var sbTarget = new StringBuilder(1024);
-                link.GetPath(sbTarget, sbTarget.Capacity, out _, 0);
+                link.GetPath(sbTarget, sbTarget.Capacity, IntPtr.Zero, 0); // pfd = NULL: a non-null pointer receives a 592-byte WIN32_FIND_DATAW
 
                 var sbIcon = new StringBuilder(1024);
                 int iconIndex = 0;

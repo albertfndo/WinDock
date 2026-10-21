@@ -30,7 +30,7 @@ namespace WinDock
             // 2. Global Exception Safety to prevent leaving the taskbar hidden on unhandled crash
             DispatcherUnhandledException += (sender, args) =>
             {
-                System.Diagnostics.Debug.WriteLine($"[WinDock Crash] {args.Exception}");
+                LogCrash(args.Exception);
                 TaskbarController.ShowTaskbar();
                 MessageBox.Show($"WinDock Notice: {args.Exception.Message}", "WinDock Notice", MessageBoxButton.OK, MessageBoxImage.Warning);
                 args.Handled = true; // Prevent app force-close!
@@ -38,6 +38,7 @@ namespace WinDock
 
             AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
             {
+                LogCrash(args.ExceptionObject);
                 TaskbarController.ShowTaskbar();
             };
 
@@ -48,6 +49,21 @@ namespace WinDock
             }
 
             base.OnStartup(e);
+        }
+
+        /// <summary>
+        /// Appends to %APPDATA%\WinDock\crash.log. Native crashes (access violations) never reach here;
+        /// those only show up in Event Viewer > Windows Logs > Application.
+        /// </summary>
+        private static void LogCrash(object exception)
+        {
+            try
+            {
+                string dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WinDock");
+                System.IO.Directory.CreateDirectory(dir);
+                System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "crash.log"), $"[{DateTime.Now:O}] {exception}\n\n");
+            }
+            catch { }
         }
 
         protected override void OnExit(ExitEventArgs e)

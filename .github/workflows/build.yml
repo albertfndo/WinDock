@@ -1,4 +1,4 @@
-name: Build WinDock Windows Executable
+name: Build WinDock Windows Executable & Installer
 
 on:
   push:
@@ -33,8 +33,18 @@ jobs:
         -p:IncludeNativeLibrariesForSelfExtract=true
         -o ./publish
 
-    - name: Upload WinDock.exe Artifact
+    - name: Compile Windows Installation Wizard (Inno Setup)
+      run: |
+        iscc installer/WinDock_Setup.iss
+
+    - name: Upload Installation Wizard (Setup.exe)
       uses: actions/upload-artifact@v4
       with:
-        name: WinDock-Windows-x64
+        name: WinDock-Installation-Wizard
+        path: ./publish/installer/WinDock-Setup.exe
+
+    - name: Upload Standalone Portable WinDock.exe
+      uses: actions/upload-artifact@v4
+      with:
+        name: WinDock-Standalone-Portable
         path: ./publish/WinDock.exe

@@ -141,6 +141,16 @@ namespace WinDock.Views
         public void ApplyAppearance(DockSettings settings)
         {
             DockBar.CornerRadius = new CornerRadius(settings.BorderRadius);
+            DockBar.Height = settings.IconSize + 18;
+
+            if (_dockManager != null)
+            {
+                foreach (var item in _dockManager.DockItems)
+                {
+                    item.IconSize = settings.IconSize;
+                }
+            }
+            PositionAtBottomCenter();
 
             byte alpha = (byte)Math.Clamp((int)(settings.GlassOpacity * 255), 25, 255);
 
@@ -335,29 +345,104 @@ namespace WinDock.Views
 
         private void OnItemMouseEnter(object sender, MouseEventArgs e)
         {
-            if (sender is FrameworkElement elem && elem.DataContext is DockItem item)
-            {
-                double targetScale = _settingsService.CurrentSettings.MagnificationScale;
-                AnimateItemScale(item, targetScale);
-            }
         }
 
         private void OnItemMouseLeave(object sender, MouseEventArgs e)
         {
-            if (sender is FrameworkElement elem && elem.DataContext is DockItem item)
-            {
-                AnimateItemScale(item, 1.0);
-            }
-        }
-
-        private void AnimateItemScale(DockItem item, double targetScale)
-        {
-            item.Scale = targetScale;
         }
 
         private void OnDockItemsMouseMove(object sender, MouseEventArgs e)
         {
-            // Fluid parabolic magnification can be enhanced here
+            if (_dockManager == null) return;
+            var settings = _settingsService.CurrentSettings;
+            double maxScale = settings.MagnificationScale;
+
+            Point mousePos = e.GetPosition(DockItemsControl);
+            double spread = settings.IconSize * 2.2;
+
+            DockItem? closestItem = null;
+            double minDistance = double.MaxValue;
+            Point closestItemPosInRoot = new Point(0, 0);
+
+            for (int i = 0; i < DockItemsControl.Items.Count; i++)
+            {
+                if (DockItemsControl.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement container)
+                {
+                    Point itemCenterInDock = container.TranslatePoint(
+                        new Point(container.ActualWidth / 2, container.ActualHeight / 2),
+                        DockItemsControl);
+
+                    double dist = Math.Abs(mousePos.X - itemCenterInDock.X);
+
+                    if (dist < minDistance)
+                    {
+                        minDistance = dist;
+                        closestItem = DockItemsControl.Items[i] as DockItem;
+                        closestItemPosInRoot = container.TranslatePoint(new Point(container.ActualWidth / 2, 0), RootGrid);
+                    }
+
+                    if (maxScale > 1.01 && dist < spread)
+                    {
+                        double factor = Math.Cos((dist / spread) * (Math.PI / 2));
+                        double targetScale = 1.0 + (maxScale - 1.0) * factor;
+                        if (DockItemsControl.Items[i] is DockItem item)
+                        {
+                            item.Scale = targetScale;
+                        }
+                    }
+                    else
+                    {
+                        if (DockItemsControl.Items[i] is DockItem item)
+                        {
+                            item.Scale = 1.0;
+                        }
+                    }
+                }
+            }
+
+            // Smooth Mac Tooltip Bubble tracking
+            if (closestItem != null && minDistance < settings.IconSize * 1.5)
+            {
+                ShowMacTooltip(closestItem.Title, closestItemPosInRoot.X);
+            }
+            else
+            {
+                HideMacTooltip();
+            }
+        }
+
+        private void ShowMacTooltip(string text, double centerXInRoot)
+        {
+            if (MacTooltipBubble == null || MacTooltipText == null) return;
+
+            MacTooltipText.Text = text;
+            MacTooltipBubble.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            double bubbleWidth = MacTooltipBubble.DesiredSize.Width;
+
+            double left = Math.Max(0, centerXInRoot - (bubbleWidth / 2));
+            MacTooltipBubble.Margin = new Thickness(left, 0, 0, 6);
+
+            if (MacTooltipBubble.Opacity < 0.95)
+            {
+                var anim = new DoubleAnimation(1.0, TimeSpan.FromMilliseconds(100))
+                {
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                };
+                MacTooltipBubble.BeginAnimation(OpacityProperty, anim);
+            }
+        }
+
+        private void HideMacTooltip()
+        {
+            if (MacTooltipBubble == null) return;
+            if (MacTooltipBubble.Opacity > 0.05)
+            {
+                var anim = new DoubleAnimation(0.0, TimeSpan.FromMilliseconds(120))
+                {
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                };
+                MacTooltipBubble.BeginAnimation(OpacityProperty, anim);
+            }
         }
 
         #endregion
@@ -455,6 +540,14 @@ namespace WinDock.Views
 
         private void OnDockMouseLeave(object sender, MouseEventArgs e)
         {
+            if (_dockManager != null)
+            {
+                foreach (var item in _dockManager.DockItems)
+                {
+                    item.Scale = 1.0;
+                }
+            }
+            HideMacTooltip();
         }
 
         #endregion

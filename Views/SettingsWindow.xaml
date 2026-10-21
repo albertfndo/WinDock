@@ -69,15 +69,25 @@
                     <TextBlock Text="WinDock Preferences &amp; Design" Foreground="#F8FAFC" FontSize="16" FontWeight="Bold" />
                 </StackPanel>
 
-                <Button Content="✕"
-                        Click="OnCloseClicked"
-                        HorizontalAlignment="Right"
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Content="✨ Setup Wizard" Click="OnRunSetupWizardClicked"
+                            Background="#2038BDF8" Foreground="#38BDF8" BorderBrush="#4038BDF8" BorderThickness="1"
+                            FontSize="11" FontWeight="SemiBold" Padding="9,3" Cursor="Hand" Margin="0,0,12,0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6" />
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button Content="✕"
+                            Click="OnCloseClicked"
                         VerticalAlignment="Center"
                         Background="Transparent"
                         Foreground="#94A3B8"
                         BorderThickness="0"
                         FontSize="14"
                         Cursor="Hand" />
+                </StackPanel>
             </Grid>
 
             <!-- Settings Content -->

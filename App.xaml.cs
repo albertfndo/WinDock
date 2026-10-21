@@ -32,6 +32,9 @@ namespace WinDock
             {
                 System.Diagnostics.Debug.WriteLine($"[WinDock Crash] {args.Exception}");
                 TaskbarController.ShowTaskbar();
+                MessageBox.Show($"WinDock encountered a handled error:
+{args.Exception.Message}", "WinDock Notice", MessageBoxButton.OK, MessageBoxImage.Warning);
+                args.Handled = true; // Prevent app force-close!
             };
 
             AppDomain.CurrentDomain.UnhandledException += (sender, args) =>

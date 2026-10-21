@@ -41,7 +41,8 @@ namespace WinDock.Services
                     IsPinned = true,
                     IsRunning = false,
                     IsActive = false,
-                    WindowCount = 0
+                    WindowCount = 0,
+                    IconSize = _settingsService.CurrentSettings.IconSize
                 };
 
                 // Extract Icon from path or executable
@@ -137,6 +138,7 @@ namespace WinDock.Services
                                 IsRunning = true,
                                 IsActive = (win.Hwnd == activeHwnd),
                                 WindowCount = 1,
+                                IconSize = _settingsService.CurrentSettings.IconSize,
                                 Icon = WindowHelper.GetWindowIcon(win.Hwnd, win.ExePath)
                             };
 
@@ -261,6 +263,7 @@ namespace WinDock.Services
                     LaunchPath = resolvedPath,
                     IsPinned = true,
                     IsRunning = false,
+                    IconSize = _settingsService.CurrentSettings.IconSize,
                     Icon = WindowHelper.GetWindowIcon(IntPtr.Zero, resolvedPath)
                 };
                 _dockItems.Add(newItem);

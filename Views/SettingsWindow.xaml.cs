@@ -12,9 +12,16 @@ namespace WinDock.Views
         private readonly SettingsService _settingsService = SettingsService.Instance;
         private string _selectedTint = "#4B5563";
 
+        private bool _isLoaded = false;
+
         public SettingsWindow()
         {
             InitializeComponent();
+            Loaded += (s, e) =>
+            {
+                _isLoaded = true;
+                UpdatePreview();
+            };
             LoadCurrentSettings();
         }
 
@@ -43,23 +50,27 @@ namespace WinDock.Views
 
         private void OnGlassOpacityChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            if (!_isLoaded) return;
             UpdateGlassLabel(e.NewValue);
             UpdatePreview();
         }
 
         private void OnBorderRadiusChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            if (!_isLoaded) return;
             UpdateRadiusLabel(e.NewValue);
             UpdatePreview();
         }
 
         private void OnMagnificationChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            if (!_isLoaded) return;
             UpdateMagnificationLabel(e.NewValue);
         }
 
         private void OnIconSizeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            if (!_isLoaded) return;
             UpdateIconSizeLabel(e.NewValue);
         }
 
@@ -112,7 +123,7 @@ namespace WinDock.Views
 
         private void UpdatePreview()
         {
-            if (PreviewDock == null) return;
+            if (!_isLoaded || PreviewDock == null || SliderBorderRadius == null || SliderGlassOpacity == null) return;
 
             double radius = SliderBorderRadius.Value;
             double glass = SliderGlassOpacity.Value;
@@ -180,6 +191,16 @@ namespace WinDock.Views
         }
 
         #endregion
+
+        private void OnRunSetupWizardClicked(object sender, RoutedEventArgs e)
+        {
+            var wizard = new SetupWizardWindow();
+            wizard.Owner = this;
+            if (wizard.ShowDialog() == true)
+            {
+                LoadCurrentSettings();
+            }
+        }
 
         private void OnEmergencyRestoreClicked(object sender, RoutedEventArgs e)
         {

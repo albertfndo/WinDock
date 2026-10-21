@@ -18,6 +18,23 @@ namespace WinDock.Models
         private int _windowCount;
         private double _scale = 1.0;
         private string? _badgeText;
+        private double _iconSize = 52.0;
+
+        public double IconSize
+        {
+            get => _iconSize;
+            set
+            {
+                if (SetField(ref _iconSize, value))
+                {
+                    OnPropertyChanged(nameof(ItemWidth));
+                    OnPropertyChanged(nameof(ItemHeight));
+                }
+            }
+        }
+
+        public double ItemWidth => _iconSize + 8;
+        public double ItemHeight => _iconSize + 14;
 
         public string? BadgeText
         {
